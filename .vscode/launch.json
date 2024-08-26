@@ -1,0 +1,29 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "C/C++ Runner: Debug Session",
+      "type": "cppdbg",
+      "request": "launch",
+      "args": [],
+      "stopAtEntry": false,
+      "externalConsole": false,
+      "cwd": "${workspaceFolder}",  // Usar o diretório do projeto.
+      "program": "${workspaceFolder}/build/Debug/outDebug",  // Caminho para o executável gerado.
+      "MIMode": "gdb",
+      "miDebuggerPath": "C:/MinGW/bin/gdb.exe",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ],
+      "preLaunchTask": "build",  // Nome da tarefa de compilação que você configurará no tasks.json.
+      "logging": {
+        "moduleLoad": false
+      },
+      "targetArchitecture": "x64"
+    }
+  ]
+}

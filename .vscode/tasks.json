@@ -1,0 +1,28 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "build",
+        "type": "shell",
+        "command": "g++",
+        "args": [
+          "-g",
+          "${workspaceFolder}/src/main.cpp",  // Ajuste para o caminho do seu código fonte.
+          "-o",
+          "${workspaceFolder}/build/Debug/outDebug",  // Caminho para o executável gerado.
+          "-I${workspaceFolder}/path/to/xlsxio/include",  // Caminho para a pasta de inclusão do xlsxio.
+          "-L${workspaceFolder}/path/to/xlsxio/lib",  // Caminho para a pasta de bibliotecas do xlsxio.
+          "-lxlsxio_read",
+          "-lxlsxio_write",
+          "-lz"  // Se você precisar linkar com outras bibliotecas.
+        ],
+        "group": {
+          "kind": "build",
+          "isDefault": true
+        },
+        "problemMatcher": ["$gcc"],
+        "detail": "Generated task by VSCode."
+      }
+    ]
+  }
+  
