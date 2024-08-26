@@ -94,25 +94,36 @@ def cadastrar_cliente(nome, cpf, data_nascimento, rg):
     df_cliente = ler_dados_planilha('Clientes')
 
     if df_cliente is not None:
-        novo_id = gerar_id_unico(df_cliente)
-        # Adiciona o novo funcionário à planilha 'cliente'
-        novo_cliente = pd.DataFrame({
-            'ID': [novo_id],
-            'Nome': [nome],
-            'CPF': [cpf],
-            'Data de Nascimento': [data_nascimento],
-            'RG': [rg]
-        })
-        df_cliente = pd.concat([df_cliente, novo_cliente], ignore_index=True)
+         # Verifica se o CPF ou RG já existem na planilha 'Clientes'
+        cpf_existente = df_cliente['CPF'].astype(str).str.contains(str(cpf)).any()
+        rg_existente = df_cliente['RG'].astype(str).str.contains(str(rg)).any()
 
-        # Escreve os dados de volta nas planilhas
-        escrever_dados_planilha(df_cliente, 'Clientes')
+        if cpf_existente:
+            print("Erro: Já existe um cliente cadastrado com este CPF. Voltando a tela de cadastro...")
+            time.sleep(3)
+        elif rg_existente:
+            print("Erro: Já existe um cliente cadastrado com este RG. Voltando a tela de cadastro...")
+            time.sleep(3)
+        else:
+            novo_id = gerar_id_unico(df_cliente)
+            # Adiciona o novo funcionário à planilha 'cliente'
+            novo_cliente = pd.DataFrame({
+                'ID': [novo_id],
+                'Nome': [nome],
+                'CPF': [cpf],
+                'Data de Nascimento': [data_nascimento],
+                'RG': [rg]
+            })
+            df_cliente = pd.concat([df_cliente, novo_cliente], ignore_index=True)
 
-        print("Cadastro realizado com sucesso!")
+            # Escreve os dados de volta nas planilhas
+            escrever_dados_planilha(df_cliente, 'Clientes')
+
+            print("Cadastro realizado com sucesso!")
     else:
         print("Erro ao ler as planilhas.")
 
-def cadastrar_produto(nome, preco, qtd_produto):
+def cadastrar_produto(nome, preco, qtd_produto, tipo_produto):
     # Lê os dados atuais das planilhas
     df_produto = ler_dados_planilha('Produtos')
 
@@ -133,7 +144,8 @@ def cadastrar_produto(nome, preco, qtd_produto):
             'ID': [novo_id],
             'Nome': [nome],
             'Preco': [preco_arredondado],
-            'Quantidade': [qtd_produto]
+            'Quantidade': [qtd_produto],
+            'Tipo de Venda': [tipo_produto]
         })
         df_produto = pd.concat([df_produto, novo_produto], ignore_index=True)
 
@@ -175,7 +187,7 @@ def buscar_produto(nome):
     else:
         print("Nenhum produto encontrado.")
 
-def editar_produto(novo_nome, novo_preco, nova_quantidade, id_produto):
+def editar_produto(novo_nome, novo_preco, nova_quantidade, novo_tipo, id_produto):
     # Lê os dados atuais da planilha 'Produtos'
     df_produto = ler_dados_planilha('Produtos')
     print(id_produto)
@@ -191,6 +203,8 @@ def editar_produto(novo_nome, novo_preco, nova_quantidade, id_produto):
                 df_produto.at[produto_idx[0], 'Preco'] = round(float(novo_preco), 2)
             if nova_quantidade:
                 df_produto.at[produto_idx[0], 'Quantidade'] = int(nova_quantidade)
+            if novo_tipo:
+                df_produto.at[produto_idx[0], 'Tipo de Venda'] = novo_tipo
 
             # Salva as alterações na planilha
             escrever_dados_planilha(df_produto, 'Produtos')
@@ -442,8 +456,15 @@ if __name__ == "__main__":
         novo_nome = sys.argv[2]
         novo_preco = sys.argv[3]
         nova_quantidade = sys.argv[4]
+        tipo_venda = sys.argv[5]
         id_produto = sys.argv[1]
-        editar_produto(novo_nome, novo_preco, nova_quantidade, id_produto)
+        editar_produto(novo_nome, novo_preco, nova_quantidade, tipo_venda, id_produto)
+    elif "cadastrar" in sys.argv and "cliente" in sys.argv:
+        nome = sys.argv[3]
+        cpf = str(sys.argv[4])  # Certifica-se de que o CPF seja tratado como string
+        data_nascimento = sys.argv[5]
+        rg = sys.argv[6]
+        cadastrar_cliente(nome, cpf, data_nascimento, rg)
     elif len(sys.argv) == 8:
         nome = sys.argv[1]
         cpf = str(sys.argv[2])  # Certifica-se de que o CPF seja tratado como string
@@ -461,16 +482,11 @@ if __name__ == "__main__":
         else:
             sys.exit(1)  # Falha no login
     elif len(sys.argv) == 5:
-        nome = sys.argv[1]
-        cpf = str(sys.argv[2])  # Certifica-se de que o CPF seja tratado como string
-        data_nascimento = sys.argv[3]
-        rg = sys.argv[4]
-        cadastrar_cliente(nome, cpf, data_nascimento, rg)
-    elif len(sys.argv) == 4:
         nome = sys.argv[1] # Certifica-se de que o CPF seja tratado como string
         qtd_produto = sys.argv[2]
         preco = str(sys.argv[3])
-        cadastrar_produto(nome, preco, qtd_produto)
+        tipo_produto = str(sys.argv[4])
+        cadastrar_produto(nome, preco, qtd_produto, tipo_produto)
     elif len(sys.argv) == 2:
         nome = sys.argv[1]
         buscar_produto(nome)
