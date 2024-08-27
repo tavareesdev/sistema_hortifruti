@@ -169,9 +169,13 @@ def validar_login(username, password):
     else:
         print("Erro ao ler a planilha de usuários.")
         return False
-    
+
 def buscar_produto(nome):
     df = ler_dados_planilha('Produtos')
+    
+    if df is None:
+        print("Erro ao carregar os dados da planilha.")
+        return
 
     if nome != 'Todos':
         if not isinstance(nome, str):
@@ -181,9 +185,9 @@ def buscar_produto(nome):
     else:
         resultado = df
 
-    if not resultado.empty:
-        resultado = resultado.to_string(index=False)
-        print("\n" + resultado + "\n")
+    if resultado is not None and not resultado.empty:
+        resultado_str = resultado.to_string(index=False)
+        print("\n" + resultado_str + "\n")
     else:
         print("Nenhum produto encontrado.")
 

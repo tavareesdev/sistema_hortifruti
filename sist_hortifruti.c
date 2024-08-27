@@ -3,6 +3,11 @@
 #include <string.h>
 #include <unistd.h>
 
+#define MAX_PRODUTOS 100
+#define MAX_NOME 50
+#define BUFFER_SIZE 4096
+#define LARGURA_LINHA 30
+
 // Função de login
 int Login() {
     char username[50], password[50];
@@ -350,7 +355,7 @@ int Cadastro() {
             if (strlen(tipo_venda) == 0) {
                 printf("Tipo de venda nao pode ser vazio. Tente novamente.\n");
             } else if (strcmp(tipo_venda, "Granel") != 0 && strcmp(tipo_venda, "Peso") != 0) {
-                printf("Opção invalida! Digite uma opção valida (Granel ou Peso): ");
+                printf("Opcao invalida! Digite uma opcao valida (Granel ou Peso): ");
             } else {
                 break;  // Se o tipo de venda for válido, sai do loop
             }
@@ -711,7 +716,7 @@ int Busca() {
                         if (strlen(novo_tipo) == 0) {
                             printf("Tipo de venda nao pode ser vazio. Tente novamente.\n");
                         } else if (strcmp(novo_tipo, "Granel") != 0 && strcmp(novo_tipo, "Peso") != 0) {
-                            printf("Opção invalida! Digite uma opção valida (Granel ou Peso): ");
+                            printf("Opcao invalida! Digite uma opcao valida (Granel ou Peso): ");
                         } else {
                             break;  // Se o tipo de venda for válido, sai do loop
                         }
@@ -855,6 +860,277 @@ int Pesagem() {
     }
 }
 
+struct Produto {
+    int id;
+    char nome[MAX_NOME];
+    int quantidade;  // Adicionada a quantidade
+    float precoPorKg;
+    char tipoVenda[MAX_NOME]; // Adicionado tipo de venda
+};
+
+void processar_saida_python(const char *saida, struct Produto produtos[], int *totalProdutos) {
+    *totalProdutos = 0;
+
+    // Use um buffer para armazenar cada linha
+    char linha[256];
+    char *linha_ptr = strtok((char *)saida, "\n");
+
+    while (linha_ptr != NULL && *totalProdutos < MAX_PRODUTOS) {
+        int id;
+        char nome[MAX_NOME];
+        int quantidade;
+        float preco;
+        char tipoVenda[MAX_NOME];
+
+        // Ajuste o sscanf para capturar todos os campos
+        int camposLidos = sscanf(linha_ptr, "%d %49s %d %f %49s", &id, nome, &quantidade, &preco, tipoVenda);
+
+        // Verifica se a quantidade de campos lidos é correta
+        if (camposLidos >= 4) {
+            produtos[*totalProdutos].id = id;
+            strncpy(produtos[*totalProdutos].nome, nome, MAX_NOME);
+            // Usamos o nome como quantidade e preço, para depois ajustar
+            produtos[*totalProdutos].quantidade = quantidade; // Adicionamos quantidade
+            produtos[*totalProdutos].precoPorKg = preco;
+            strncpy(produtos[*totalProdutos].tipoVenda, tipoVenda, MAX_NOME);
+            (*totalProdutos)++;
+        }
+
+        linha_ptr = strtok(NULL, "\n");
+    }
+}
+
+
+void ProcessarProdutos(struct Produto produtos[], int *totalProdutos) {
+    char command[512];
+    char output[BUFFER_SIZE];
+    FILE *fp;
+
+    snprintf(command, sizeof(command),
+        "python \"C:\\Users\\gtava\\OneDrive\\Documentos\\project\\output\\excel_utils.py\" \"Todos\"");
+
+    // Executa o comando e redireciona a saída para um pipe
+    fp = _popen(command, "r");
+    if (fp == NULL) {
+        perror("popen");
+        return;
+    }
+
+    // Lê a saída do comando
+    size_t bytesRead = fread(output, sizeof(char), sizeof(output) - 1, fp);
+    _pclose(fp);
+
+    // Adiciona um terminador nulo à string
+    output[bytesRead] = '\0';
+
+    // Processa a saída
+    processar_saida_python(output, produtos, totalProdutos);
+}
+
+// Função para limpar a tela (compatível com Windows e Unix)
+void limparTela() {
+#ifdef _WIN32
+    system("cls");
+#else
+    system("clear");
+#endif
+}
+
+// Função para preencher espaços para alinhamento à direita
+void preencherEspacos(int textoLength) {
+    int espacos = LARGURA_LINHA - 2 - textoLength; // Subtraindo 2 por conta das bordas laterais "| "
+    for (int i = 0; i < espacos; i++) {
+        printf(" ");
+    }
+}
+
+// Função para buscar um produto pelo ID
+struct Produto buscarProduto(struct Produto produtos[], int totalProdutos, int id) {
+    for (int i = 0; i < totalProdutos; i++) {
+        if (produtos[i].id == id) {
+            return produtos[i];
+        }
+    }
+    // Retorna um produto vazio caso não encontre o ID
+    struct Produto vazio = {0, "", 0.0};
+    return vazio;
+}
+
+// Função para exibir todos os produtos carregados
+void exibirProdutos(struct Produto produtos[], int totalProdutos) {
+    printf("\nPRODUTOS:");
+    for (int i = 0; i < totalProdutos; i++) {
+        printf("\nID: %-4d Nome: %-20s R$ %-5.2f Tipo de Venda: %-10s",
+            produtos[i].id,
+            produtos[i].nome,
+            produtos[i].precoPorKg,
+            produtos[i].tipoVenda);
+    }
+}
+
+void caixaTerminal(struct Produto produtos[], int totalProdutos) {
+    int idProduto;
+    float quantidade;
+    float totalCompra = 0;
+    int numProdutos = 0;
+    struct Produto itensVendidos[100];
+    float quantidadesVendidas[100];
+
+    while (1) {
+        limparTela();  // Limpa a tela a cada iteração
+
+        printf("|=============================|\n");
+        printf("|            CAIXA            |\n");
+        printf("|-----------------------------|\n");
+
+        // Exibe todos os itens vendidos até agora
+        for (int i = 0; i < numProdutos; i++) {
+            int len;
+
+            len = snprintf(NULL, 0, "Produto: %s", itensVendidos[i].nome);
+            printf("| Produto: %s", itensVendidos[i].nome);
+            preencherEspacos(len);
+            printf("|\n");
+
+            len = snprintf(NULL, 0, "Quantidade: %.2f", quantidadesVendidas[i]);
+            printf("| Quantidade: %.2f", quantidadesVendidas[i]);
+            preencherEspacos(len);
+            printf("|\n");
+
+            len = snprintf(NULL, 0, "Subtotal: R$ %.2f", itensVendidos[i].precoPorKg * quantidadesVendidas[i]);
+            printf("| Subtotal: R$ %.2f", itensVendidos[i].precoPorKg * quantidadesVendidas[i]);
+            preencherEspacos(len);
+            printf("|\n");
+            printf("|-----------------------------|\n");
+        }
+
+        // Mostra o total atual
+        int lenTotalItens = snprintf(NULL, 0, "Total de itens: %d", numProdutos);
+        printf("| Total de itens: %d", numProdutos);
+        preencherEspacos(lenTotalItens);
+        printf("|\n");
+
+        int lenTotalCompra = snprintf(NULL, 0, "Total da compra: R$ %.2f", totalCompra);
+        printf("| Total da compra: R$ %.2f", totalCompra);
+        preencherEspacos(lenTotalCompra);
+        printf("|\n");
+        printf("|=============================|\n");
+
+        exibirProdutos(produtos, totalProdutos);
+
+        printf("\n\nDigite o ID do produto conforme a tabela acima(ou 0 para finalizar a compra): ");
+        scanf("%d", &idProduto);
+
+        if (idProduto == 0) {
+            break;  // Sai do loop quando o ID for 0
+        }
+
+        struct Produto produto = buscarProduto(produtos, totalProdutos, idProduto);
+
+        if (produto.id == 0) {
+            printf("Produto nao encontrado.\n");
+            continue;
+        }
+
+        printf("Digite a quantidade em kg/unidades: ");
+        scanf("%f", &quantidade);
+
+        itensVendidos[numProdutos] = produto;
+        quantidadesVendidas[numProdutos] = quantidade;
+        numProdutos++;
+
+        totalCompra += produto.precoPorKg * quantidade;
+    }
+
+    limparTela();  // Limpa a tela para mostrar o resumo final
+    printf("|=============================|\n");
+    printf("|            CAIXA            |\n");
+    printf("|-----------------------------|\n");
+
+    for (int i = 0; i < numProdutos; i++) {
+        int len;
+
+        len = snprintf(NULL, 0, "Produto: %s", itensVendidos[i].nome);
+        printf("| Produto: %s", itensVendidos[i].nome);
+        preencherEspacos(len);
+        printf("|\n");
+
+        len = snprintf(NULL, 0, "Quantidade: %.2f", quantidadesVendidas[i]);
+        printf("| Quantidade: %.2f", quantidadesVendidas[i]);
+        preencherEspacos(len);
+        printf("|\n");
+
+        len = snprintf(NULL, 0, "Subtotal: R$ %.2f", itensVendidos[i].precoPorKg * quantidadesVendidas[i]);
+        printf("| Subtotal: R$ %.2f", itensVendidos[i].precoPorKg * quantidadesVendidas[i]);
+        preencherEspacos(len);
+        printf("|\n");
+        printf("|-----------------------------|\n");
+    }
+
+    int lenTotalItens = snprintf(NULL, 0, "Total de itens: %d", numProdutos);
+    printf("| Total de itens: %d", numProdutos);
+    preencherEspacos(lenTotalItens);
+    printf("|\n");
+
+    int lenTotalCompra = snprintf(NULL, 0, "Total da compra: R$ %.2f", totalCompra);
+    printf("| Total da compra: R$ %.2f", totalCompra);
+    preencherEspacos(lenTotalCompra);
+    printf("|\n");
+    printf("|=============================|\n");
+}
+
+int Caixa() {
+    int escolha;
+    struct Produto produtos[MAX_PRODUTOS];
+    int totalProdutos = 0;
+
+    // Processar produtos
+    ProcessarProdutos(produtos, &totalProdutos);
+
+    // Opções do menu
+    system("cls");
+    printf("|==============================|\n");
+    printf("|            CAIXA             |\n");
+    printf("|                              |\n");
+    printf("| 1 - Continuar com cliente    |\n");
+    printf("| 2 - Continuar sem cliente    |\n");
+    printf("| 3 - Cancelar operacao        |\n");
+    printf("| 9 - Encerrar o sistema       |\n");
+    printf("|==============================|\n");
+    printf("Digite a opcao desejada: ");
+
+    while (1) {
+        if (scanf("%d", &escolha) != 1) {
+            // Se não for um número, limpe o buffer de entrada
+            while (getchar() != '\n');
+            printf("Entrada invalida. Digite um numero: ");
+        } else if (escolha < 1 || escolha > 3 && escolha != 9) {
+            printf("Opcao invalida. Digite novamente: ");
+        } else {
+            break;
+        }
+    }
+
+    switch (escolha) {
+        case 1:
+        case 2:
+            // Continuar com ou sem cliente
+            caixaTerminal(produtos, totalProdutos);
+            break;
+        case 3:
+            // Cancelar operação
+            printf("Operacao cancelada.\n");
+            break;
+        case 9:
+            // Encerrar o sistema
+            printf("Sistema encerrado.\n");
+            exit(0);
+            break;
+    }
+
+    return escolha;
+}
+
 void GerenciaOpcoes(int opcao) {
     switch (opcao) {
         case 1:
@@ -873,7 +1149,12 @@ void GerenciaOpcoes(int opcao) {
             Pesagem();
             break;
         case 4:
-            printf("3\n");
+            printf("\nIndo para a tela de caixa, aguarde...");
+            sleep(2);
+            Caixa();
+            break;
+        default:
+            printf("Opcao invalida!\n");
             break;
     }
     system("pause");
@@ -898,8 +1179,8 @@ int menu() {
 
     while (1) {
         if (scanf("%d", &escolha) == 1) {  // Verifica se a entrada é um número
-            if (escolha < 5 || escolha == 9) {
-                break;  // Saída do loop se a escolha for valida
+            if (escolha < 6 || escolha == 9) {
+                break;  // Saída do loop se a escolha for válida
             }
             printf("Opcao invalida! Digite uma opcao valida: ");
         } else {
@@ -907,10 +1188,10 @@ int menu() {
             while (getchar() != '\n');  // Limpa o buffer de entrada
         }
     }
-    if (escolha != 9){
+    if (escolha != 9) {
         GerenciaOpcoes(escolha);
         return escolha;
-    }else{
+    } else {
         printf("Encerrando o sistema...\n");
         sleep(3);
         exit(0);
