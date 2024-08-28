@@ -2,6 +2,8 @@ import pandas as pd
 import sys
 import openpyxl
 import time
+import re
+from datetime import datetime
 
 # Caminho para o arquivo da planilha
 planilha_caminho = 'C:\\Users\\gtava\\OneDrive\\Documentos\\project\\output\\database.xlsx'
@@ -368,7 +370,12 @@ def buscar_cliente(nome):
         resultado = resultado.to_string(index=False)
         print("\n" + resultado + "\n")
     else:
-        print("Nenhum cliente encontrado.")
+        resultado = df[df['ID'].str.contains(nome.strip(), case=False, na=False)]
+        if not resultado.empty:
+            resultado = resultado.to_string(index=False)
+            print("\n" + resultado + "\n")
+        else:
+            print("Nenhum cliente encontrado.")
 
 def editar_cliente(novo_nome, novo_cpf, novo_rg, nova_data_nasc, id_cliente):
     # Lê os dados atuais da planilha 'clientes'
@@ -425,10 +432,63 @@ def excluir_cliente(id_cliente):
     wb.save(planilha_caminho)
     print(f"Cliente foi excluido(a) com sucesso.")
 
+def processar_arquivo_venda(nome_arquivo):
+    with open(nome_arquivo, 'r') as file:
+        lines = file.readlines()
+    
+    # Inicializar variáveis
+    nome_cliente = ""
+    nome_vendedor = "Gabriel Tavares"  # Nome do vendedor fixo para o exemplo
+    produtos_vendidos = []
+    quantidades = []
+    subtotal = []
+    metodo_pagamento = ""
+    parcelas = 1
+    data_hora_venda = datetime.now().strftime("%d/%m/%Y %H:%M")
+    id_compra = 1  # ID da compra fixo para o exemplo
+    
+    # Processar linhas do arquivo
+    for i, line in enumerate(lines):
+        if "Nome do(a) cliente:" in line:
+            nome_cliente = line.strip().split(": ")[1]
+        elif "Pagamento:" in line:
+            metodo_pagamento_line = lines[i+5].strip()
+            metodo_pagamento = re.findall(r'\d+', metodo_pagamento_line)[0]
+        elif "CPF do(a) cliente:" in line:
+            # Extrair CPF se necessário (não usado diretamente aqui)
+            cpf_cliente = line.strip().split(": ")[1]
+        elif line.startswith('| Produto:'):
+            produto = line.split(': ')[1].strip()
+            if produto:  # Ignorar produtos vazios
+                produtos_vendidos.append(produto)
+                quantidade_line = lines[i+1].strip()
+                quantidade = float(re.findall(r'[\d.]+', quantidade_line)[0])
+                quantidades.append(quantidade)
+                subtotal_line = lines[i+2].strip()
+                subtotal.append(float(re.findall(r'[\d.]+', subtotal_line)[0]))
+    
+    # Criar DataFrame
+    df = pd.DataFrame({
+        "ID": [id_compra] * len(produtos_vendidos),
+        "Nome do Cliente": [nome_cliente] * len(produtos_vendidos),
+        "Nome do Vendedor": [nome_vendedor] * len(produtos_vendidos),
+        "Produtos Vendidos": produtos_vendidos,
+        "Quantidade": quantidades,
+        "Subtotal de cada produto": subtotal,
+        "Método de Pagamento": [metodo_pagamento] * len(produtos_vendidos),
+        "Quantidade de Parcelas": [parcelas] * len(produtos_vendidos),
+        "Data e hora da venda": [data_hora_venda] * len(produtos_vendidos)
+    })
+
+    df.to_excel(planilha_caminho, index=False, engine='openpyxl')
+
 if __name__ == "__main__":
     if "excluir" in sys.argv and "produto" in sys.argv:
         id_produto = sys.argv[3]
         excluir_produto(id_produto)
+    if "salvar" in sys.argv and "compra" in sys.argv:
+        nome_arquivo = sys.argv[3]
+        processar_arquivo_venda(nome_arquivo)
     elif "excluir" in sys.argv and "funcionario" in sys.argv:
         id_funcionario = sys.argv[3]
     elif "excluir" in sys.argv and "cliente" in sys.argv:

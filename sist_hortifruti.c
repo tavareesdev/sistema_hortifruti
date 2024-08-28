@@ -968,7 +968,151 @@ void exibirProdutos(struct Produto produtos[], int totalProdutos) {
     }
 }
 
-void caixaTerminal(struct Produto produtos[], int totalProdutos) {
+void salvarCompra(int idCompra, const char *nomeVendedor, const char *nomeCliente,
+struct Produto itensVendidos[], float quantidadesVendidas[], int numProdutos,
+float totalCompra, int tipoPagamento, int parcelas) {
+    FILE *arquivo = fopen("Compra.txt", "a");
+
+    if (arquivo == NULL) {
+        perror("Erro ao abrir o arquivo");
+        return;
+    }
+
+    fprintf(arquivo, "|=============================|\n");
+    fprintf(arquivo, "|            CAIXA            |\n");
+    fprintf(arquivo, "|-----------------------------|\n");
+
+    for (int i = 0; i < numProdutos; i++) {
+        fprintf(arquivo, "| Produto: %-15s |\n", itensVendidos[i].nome);
+        fprintf(arquivo, "| Quantidade: %.2f kg |\n", quantidadesVendidas[i]);
+        fprintf(arquivo, "| Subtotal: R$ %.2f |\n", itensVendidos[i].precoPorKg * quantidadesVendidas[i]);
+        fprintf(arquivo, "|-----------------------------|\n");
+    }
+
+    fprintf(arquivo, "| Total de itens: %d |\n", numProdutos);
+    fprintf(arquivo, "| Total da compra: R$ %.2f |\n", totalCompra);
+    fprintf(arquivo, "|=============================|\n");
+
+    fprintf(arquivo, "Nome do(a) cliente: %s\n\n", nomeCliente);
+
+    fprintf(arquivo, "PRODUTOS:\n");
+    for (int i = 0; i < numProdutos; i++) {
+        fprintf(arquivo, "ID: %-4d Nome: %-20s R$ %-5.2f Tipo de Venda: %-10s\n",
+                itensVendidos[i].id,
+                itensVendidos[i].nome,
+                itensVendidos[i].precoPorKg,
+                itensVendidos[i].tipoVenda);
+    }
+
+    fprintf(arquivo, "\nDigite o ID do produto conforme a tabela acima(ou 0 para finalizar a compra): 0\n");
+    fprintf(arquivo, "\nPagamento:\n");
+    fprintf(arquivo, "Deseja CPF na nota? (Digite 'Sim' ou 'Nao'): %s\n", tipoPagamento == 1 ? "Sim" : "Nao");
+    fprintf(arquivo, "CPF do(a) cliente: %d\n", tipoPagamento); // Simplificado para exemplo
+
+    fprintf(arquivo, "Escolha uma das formas de pagamento acima: %d\n", tipoPagamento);
+    fprintf(arquivo, "O pagamento foi realizado com sucesso? (Responda com 'Sim' ou 'Nao'): %s\n", tipoPagamento == 1 ? "Sim" : "Nao");
+
+    fclose(arquivo);
+}
+
+void Pagamento(int cpf, int idCompra, const char *nomeVendedor, struct Produto itensVendidos[], 
+    float quantidadesVendidas[], int numProdutos, float totalCompra) {
+    int opcaoPag, qtdParcela;
+    char opcaoCPF[50], opcaoParcela[50], confirmacao[50];
+    int parcelas = 1; // Default para pagamentos não parcelados
+
+    while (getchar() != '\n');
+
+    printf("Deseja CPF na nota? (Digite 'Sim' ou 'Nao'): ");
+    fgets(opcaoCPF, sizeof(opcaoCPF), stdin);
+    opcaoCPF[strcspn(opcaoCPF, "\n")] = 0;
+
+    while (strcmp(opcaoCPF, "Sim") != 0 && strcmp(opcaoCPF, "Nao") != 0) {
+        printf("Opcao invalida! Digite 'Sim' ou 'Nao': ");
+        fgets(opcaoCPF, sizeof(opcaoCPF), stdin);
+        opcaoCPF[strcspn(opcaoCPF, "\n")] = 0;
+    }
+
+    if (strcmp(opcaoCPF, "Sim") == 0) {
+        printf("CPF do(a) cliente: %d\n", cpf);
+        printf("\n1 - Cartao de credito \n");
+        printf("2 - Cartao de debito \n");
+        printf("3 - Dinheiro \n");
+        printf("4 - PIX\n\n");
+        printf("Escolha uma das formas de pagamento acima: ");
+        scanf("%i", &opcaoPag);
+
+        while (opcaoPag < 1 || opcaoPag > 4) {
+            printf("Opcao invalida! Digite uma opcao valida: ");
+            scanf("%i", &opcaoPag);
+        }
+
+        while (getchar() != '\n');
+
+        if (opcaoPag == 1) {
+            printf("Deseja parcelar em ate 3x sem juros? (Responda com 'Sim' ou 'Nao'): ");
+            fgets(opcaoParcela, sizeof(opcaoParcela), stdin);
+            opcaoParcela[strcspn(opcaoParcela, "\n")] = 0;
+
+            while (strcmp(opcaoParcela, "Sim") != 0 && strcmp(opcaoParcela, "Nao") != 0) {
+                printf("Opcao invalida! Digite 'Sim' ou 'Nao': ");
+                fgets(opcaoParcela, sizeof(opcaoParcela), stdin);
+                opcaoParcela[strcspn(opcaoParcela, "\n")] = 0;
+            }
+
+            if (strcmp(opcaoParcela, "Sim") == 0) {
+                printf("Quer parcelar em quantas vezes? (ate 3x sem juros): ");
+                scanf("%i", &qtdParcela);
+
+                while (qtdParcela < 2 || qtdParcela > 3) {
+                    printf("Opcao invalida! Digite um numero de parcelas valido (2 ou 3): ");
+                    scanf("%i", &qtdParcela);
+                }
+            } else {
+                qtdParcela = 1;
+            }
+        } else {
+            qtdParcela = 1;
+        }
+    } else {
+        printf("\n1 - Cartao de credito \n");
+        printf("2 - Cartao de debito \n");
+        printf("3 - Dinheiro \n");
+        printf("4 - PIX\n\n");
+        printf("Escolha uma das formas de pagamento acima: ");
+        scanf("%i", &opcaoPag);
+
+        while (opcaoPag < 1 || opcaoPag > 4) {
+            printf("Opcao invalida! Digite uma opcao valida: ");
+            scanf("%i", &opcaoPag);
+        }
+
+        qtdParcela = 1;
+    }
+
+    while (getchar() != '\n');
+
+    printf("O pagamento foi realizado com sucesso? (Responda com 'Sim' ou 'Nao'): ");
+    fgets(confirmacao, sizeof(confirmacao), stdin);
+    confirmacao[strcspn(confirmacao, "\n")] = 0;
+
+    while (strcmp(confirmacao, "Sim") != 0 && strcmp(confirmacao, "Nao") != 0) {
+        printf("Opcao invalida! Digite 'Sim' ou 'Nao': ");
+        fgets(confirmacao, sizeof(confirmacao), stdin);
+        confirmacao[strcspn(confirmacao, "\n")] = 0;
+    }
+
+    if (strcmp(confirmacao, "Sim") == 0) {
+        salvarCompra(idCompra, nomeVendedor, "Cliente", itensVendidos, quantidadesVendidas, 3, totalCompra, opcaoPag, qtdParcela);
+    } else {
+        printf("Pagamento não realizado.\n");
+    }
+    printf("Finalizando a operacao...\n");
+    sleep(3);
+    Caixa();
+}
+
+void caixaTerminal(struct Produto produtos[], int totalProdutos, int cpf, char nome[50], int id) {
     int idProduto;
     float quantidade;
     float totalCompra = 0;
@@ -977,13 +1121,12 @@ void caixaTerminal(struct Produto produtos[], int totalProdutos) {
     float quantidadesVendidas[100];
 
     while (1) {
-        limparTela();  // Limpa a tela a cada iteração
+        limparTela();
 
         printf("|=============================|\n");
         printf("|            CAIXA            |\n");
         printf("|-----------------------------|\n");
 
-        // Exibe todos os itens vendidos até agora
         for (int i = 0; i < numProdutos; i++) {
             int len;
 
@@ -1004,7 +1147,6 @@ void caixaTerminal(struct Produto produtos[], int totalProdutos) {
             printf("|-----------------------------|\n");
         }
 
-        // Mostra o total atual
         int lenTotalItens = snprintf(NULL, 0, "Total de itens: %d", numProdutos);
         printf("| Total de itens: %d", numProdutos);
         preencherEspacos(lenTotalItens);
@@ -1016,68 +1158,47 @@ void caixaTerminal(struct Produto produtos[], int totalProdutos) {
         printf("|\n");
         printf("|=============================|\n");
 
+        if (strcmp(nome, "") != 0) {
+            printf("Nome do(a) cliente: %s\n", nome);
+        }
+
         exibirProdutos(produtos, totalProdutos);
 
         printf("\n\nDigite o ID do produto conforme a tabela acima(ou 0 para finalizar a compra): ");
         scanf("%d", &idProduto);
 
         if (idProduto == 0) {
-            break;  // Sai do loop quando o ID for 0
+            break;
         }
 
-        struct Produto produto = buscarProduto(produtos, totalProdutos, idProduto);
+        struct Produto produtoSelecionado = buscarProduto(produtos, totalProdutos, idProduto);
 
-        if (produto.id == 0) {
-            printf("Produto nao encontrado.\n");
-            continue;
+        if (produtoSelecionado.id != 0) {
+            printf("Digite a quantidade desejada em KG: ");
+            scanf("%f", &quantidade);
+
+            if (quantidade > 0) {
+                totalCompra += produtoSelecionado.precoPorKg * quantidade;
+                itensVendidos[numProdutos] = produtoSelecionado;
+                quantidadesVendidas[numProdutos] = quantidade;
+                numProdutos++;
+            } else {
+                printf("Quantidade inválida.\n");
+            }
+        } else {
+            printf("Produto não encontrado.\n");
         }
-
-        printf("Digite a quantidade em kg/unidades: ");
-        scanf("%f", &quantidade);
-
-        itensVendidos[numProdutos] = produto;
-        quantidadesVendidas[numProdutos] = quantidade;
-        numProdutos++;
-
-        totalCompra += produto.precoPorKg * quantidade;
     }
 
-    limparTela();  // Limpa a tela para mostrar o resumo final
-    printf("|=============================|\n");
-    printf("|            CAIXA            |\n");
-    printf("|-----------------------------|\n");
-
-    for (int i = 0; i < numProdutos; i++) {
-        int len;
-
-        len = snprintf(NULL, 0, "Produto: %s", itensVendidos[i].nome);
-        printf("| Produto: %s", itensVendidos[i].nome);
-        preencherEspacos(len);
-        printf("|\n");
-
-        len = snprintf(NULL, 0, "Quantidade: %.2f", quantidadesVendidas[i]);
-        printf("| Quantidade: %.2f", quantidadesVendidas[i]);
-        preencherEspacos(len);
-        printf("|\n");
-
-        len = snprintf(NULL, 0, "Subtotal: R$ %.2f", itensVendidos[i].precoPorKg * quantidadesVendidas[i]);
-        printf("| Subtotal: R$ %.2f", itensVendidos[i].precoPorKg * quantidadesVendidas[i]);
-        preencherEspacos(len);
-        printf("|\n");
-        printf("|-----------------------------|\n");
-    }
-
-    int lenTotalItens = snprintf(NULL, 0, "Total de itens: %d", numProdutos);
-    printf("| Total de itens: %d", numProdutos);
-    preencherEspacos(lenTotalItens);
-    printf("|\n");
-
-    int lenTotalCompra = snprintf(NULL, 0, "Total da compra: R$ %.2f", totalCompra);
-    printf("| Total da compra: R$ %.2f", totalCompra);
-    preencherEspacos(lenTotalCompra);
-    printf("|\n");
-    printf("|=============================|\n");
+    printf("\nPagamento:\n");
+    Pagamento(cpf, id, nome, itensVendidos, quantidadesVendidas, numProdutos, totalCompra);
 }
+
+typedef struct {
+    int id;
+    char nome[100];
+    int cpf;
+} Cliente;
 
 int Caixa() {
     int escolha;
@@ -1111,11 +1232,58 @@ int Caixa() {
         }
     }
 
+    char command[512], nome[50] = "";
+    int cpf = 0, id = 0;
+
     switch (escolha) {
-        case 1:
+        case 1: {
+            snprintf(command, sizeof(command),
+                "python \"C:\\Users\\gtava\\OneDrive\\Documentos\\project\\output\\excel_utils.py\" buscar cliente \"Todos\"");
+            FILE *fp = popen(command, "r");
+            if (fp == NULL) {
+                printf("Falha ao executar o comando.\n");
+                return 1;
+            }
+
+            char output[1035];
+            while (fgets(output, sizeof(output), fp) != NULL) {
+                if (strstr(output, "Nenhum") != NULL) {
+                    // Se houver uma mensagem de erro, retorne para a tela de cadastro
+                    pclose(fp);
+                    sleep(2);
+                    Busca();  // Voltar ao menu de cadastro
+                    return 1;
+                } else {
+                    // Imprime a saída do comando python (lista de clientes)
+                    printf("%s", output);
+                }
+            }
+            pclose(fp);
+
+            int id_cliente;
+            printf("\nDigite o ID do(a) cliente conforme a tabela acima: ");
+            scanf("%i", &id_cliente);
+
+            snprintf(command, sizeof(command),
+                "python \"C:\\Users\\gtava\\OneDrive\\Documentos\\project\\output\\excel_utils.py\" buscar cliente \"%i\"", id_cliente);
+            
+            fp = popen(command, "r");
+            if (fp == NULL) {
+                printf("Erro ao executar comando.\n");
+                return 1;
+            }
+
+            Cliente cliente;
+            while (fgets(output, sizeof(output), fp) != NULL) {
+                if (sscanf(output, "%d %s %d", &cliente.id, cliente.nome, &cliente.cpf) == 3) {
+                    // Sucesso ao capturar os dados
+                    caixaTerminal(produtos, totalProdutos, cliente.cpf, cliente.nome, cliente.id);
+                }
+            } 
+        }
         case 2:
             // Continuar com ou sem cliente
-            caixaTerminal(produtos, totalProdutos);
+            caixaTerminal(produtos, totalProdutos, cpf, nome, id);
             break;
         case 3:
             // Cancelar operação
@@ -1128,7 +1296,7 @@ int Caixa() {
             break;
     }
 
-    return escolha;
+    return 0;
 }
 
 void GerenciaOpcoes(int opcao) {
