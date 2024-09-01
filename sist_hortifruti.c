@@ -1,65 +1,152 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
+#include <stdio.h>      // Biblioteca para entrada e saída padrão (printf, fgets)
+#include <stdlib.h>     // Biblioteca para funções de utilidade geral (snprintf, system)
+#include <string.h>     // Biblioteca para manipulação de strings (strcmp, strcspn)
+#include <unistd.h>     // Biblioteca para chamadas ao sistema POSIX (sleep)
+#include <time.h>       // Biblioteca para manipulação de tempo (time)
 
+// Define o número máximo de produtos no sistema
 #define MAX_PRODUTOS 100
+
+// Define o tamanho máximo permitido para o nome de um produto
 #define MAX_NOME 50
+
+// Define o tamanho do buffer para leitura de arquivos ou execução de comandos
 #define BUFFER_SIZE 4096
+
+// Define a largura padrão de uma linha, possivelmente para impressão ou exibição formatada
 #define LARGURA_LINHA 30
 
-// Função de login
+/**
+ * Função: Login
+ * -----------------
+ * Realiza o processo de autenticação do usuário, solicitando nome de usuário e senha
+ * e verificando as credenciais através de um script Python externo.
+ *
+ * Retorno:
+ *  - int: Retorna 1 se o login foi bem-sucedido, 0 em caso de falha.
+ *
+ * Descrição:
+ *  1. A função inicia solicitando que o usuário insira seu nome de usuário e senha.
+ *  2. As entradas são lidas e qualquer quebra de linha é removida para evitar erros.
+ *  3. Um comando é montado para chamar um script Python externo, passando o nome de usuário e senha como argumentos.
+ *  4. O comando é executado, e o resultado do script é lido.
+ *  5. Se o script retorna "Login bem-sucedido!", a função confirma o login e permite o acesso ao sistema.
+ *  6. Se o login falhar, o usuário é solicitado a tentar novamente.
+ */
 int Login() {
+    // Declaração de variáveis para armazenar o nome de usuário e senha
     char username[50], password[50];
     int login_sucesso = 0;
 
+    // Loop até que o login seja bem-sucedido
     while (!login_sucesso) {
+        // Solicita o nome de usuário
         printf("Digite seu nome de usuario: ");
         fgets(username, 50, stdin);
-        username[strcspn(username, "\n")] = 0;  // Remover a quebra de linha
+        username[strcspn(username, "\n")] = 0;  // Remove a quebra de linha da entrada
 
+        // Solicita a senha
         printf("Digite sua senha: ");
         fgets(password, 50, stdin);
-        password[strcspn(password, "\n")] = 0;  // Remover a quebra de linha
+        password[strcspn(password, "\n")] = 0;  // Remove a quebra de linha da entrada
 
+        // Monta o comando para executar o script Python com os argumentos do usuário e senha
         char command[512];
         snprintf(command, sizeof(command),
             "python \"C:\\Users\\gtava\\OneDrive\\Documentos\\project\\output\\excel_utils.py\" \"%s\" \"%s\"",
             username, password);
         
+        // Executa o comando e abre um pipe para leitura da saída do script
         FILE* pipe = _popen(command, "r");
         if (!pipe) {
+            // Caso o comando falhe, exibe uma mensagem de erro e retorna 0
             printf("Erro ao executar o comando.\n");
             return 0;
         }
 
+        // Lê a saída do comando (resultado do script)
         char result[256];
         if (fgets(result, sizeof(result), pipe) == NULL) {
+            // Caso ocorra erro ao ler a saída, exibe uma mensagem de erro e fecha o pipe
             printf("Erro ao ler a saída do comando.\n");
             _pclose(pipe);
             return 0;
         }
         _pclose(pipe);
         
-        // Remove possíveis quebras de linha
+        // Remove possíveis quebras de linha na saída do script
         result[strcspn(result, "\r\n")] = 0;
         
-        // Verifica se o login foi bem-sucedido
+        // Verifica se o script retornou a mensagem de login bem-sucedido
         if (strcmp(result, "Login bem-sucedido!") == 0) {
             printf("\nLogin realizado com sucesso!\n");
             printf("Acessando o sistema, aguarde...\n");
-            sleep(3);
-            login_sucesso = 1;
+            sleep(3);  // Pausa para simular o tempo de acesso ao sistema
+            login_sucesso = 1;  // Marca que o login foi bem-sucedido
         } else {
+            // Se o login falhar, exibe uma mensagem e solicita uma nova tentativa
             printf("\nUsuario ou senha incorretos. Tente novamente.\n");
         }
     }
 
+    // Retorna 1 indicando que o login foi bem-sucedido
     return login_sucesso;
 }
 
-// Função de cadastro
-// Função de cadastro
+/**
+ * Função de cadastro para diferentes tipos de entidades (Funcionário, Cliente, Produto) e opções de controle do sistema.
+ *
+ * Esta função exibe um menu para o usuário escolher o tipo de cadastro ou opções de controle do sistema. Dependendo da escolha, ela permite o cadastro de um novo funcionário, cliente ou produto. Também pode cancelar a operação atual ou encerrar o sistema.
+ *
+ * A função realiza o seguinte:
+ * 
+ * 1. Exibe um menu com as opções disponíveis:
+ *    - 1: Cadastro de Funcionário
+ *    - 2: Cadastro de Cliente
+ *    - 3: Cadastro de Produto
+ *    - 4: Cancelar Operação
+ *    - 9: Encerrar o Sistema
+ *
+ * 2. Após a escolha do usuário, realiza a seguinte ação com base na opção selecionada:
+ *    - **Opção 1: Cadastro de Funcionário**
+ *      - Solicita e valida os seguintes dados do funcionário:
+ *        - Nome (não pode estar vazio e não pode conter caracteres especiais)
+ *        - Data de Nascimento (no formato dd/mm/yyyy)
+ *        - CPF (apenas números)
+ *        - RG (apenas números)
+ *        - Nome de Usuário (não pode estar vazio e não pode conter caracteres especiais)
+ *        - Senha (não pode estar vazia e não pode conter caracteres especiais)
+ *        - Tipo de Usuário (deve ser um valor entre 1 e 4)
+ *      - Executa um comando Python para cadastrar o funcionário e captura a saída do comando.
+ *      - Em caso de erro na execução do comando, retorna ao menu de cadastro.
+ *    
+ *    - **Opção 2: Cadastro de Cliente**
+ *      - Solicita e valida os seguintes dados do cliente:
+ *        - Nome (não pode estar vazio)
+ *        - CPF (apenas números)
+ *        - RG (apenas números)
+ *        - Data de Nascimento (no formato dd/mm/aaaa)
+ *      - Executa um comando Python para cadastrar o cliente e captura a saída do comando.
+ *      - Em caso de erro na execução do comando, retorna ao menu de cadastro.
+ *    
+ *    - **Opção 3: Cadastro de Produto**
+ *      - Solicita e valida os seguintes dados do produto:
+ *        - Nome (não pode estar vazio e não pode conter caracteres especiais)
+ *        - Quantidade (apenas números)
+ *        - Tipo de Venda (deve ser "Granel" ou "Peso")
+ *        - Preço por unidade (um valor numérico)
+ *      - Executa um comando Python para cadastrar o produto.
+ *    
+ *    - **Opção 4: Cancelar Operação**
+ *      - Retorna ao menu principal.
+ *    
+ *    - **Opção 9: Encerrar o Sistema**
+ *      - Exibe uma mensagem de encerramento e fecha o sistema após uma pausa de 3 segundos.
+ *
+ * A função utiliza as funções `system()`, `printf()`, `scanf()`, `fgets()`, e `popen()` para interagir com o usuário e executar comandos externos.
+ * 
+ *  return Retorna 0 ao finalizar a função.
+ */
 int Cadastro() {
     int escolha;
     system("cls");
@@ -390,6 +477,31 @@ int Cadastro() {
     }
     return 0;
 }
+
+/**
+ * Exibe um menu para o usuário selecionar o tipo de busca a ser realizada (Funcionário, Cliente, Produto) 
+ * e executa as operações correspondentes, como buscar, editar ou excluir registros no sistema.
+ *
+ * int Retorna 0 se a operação for concluída com sucesso, e -1 em caso de erro.
+ *
+ * A função `Busca()` permite ao usuário buscar por registros específicos (Funcionário, Cliente, Produto) no sistema.
+ * Após selecionar o tipo de busca, o usuário pode inserir o nome para realizar a busca. Se o registro for encontrado, 
+ * a função oferece opções para editar ou excluir o registro. Caso a operação seja bem-sucedida, a função retorna ao 
+ * menu principal. Em caso de erro ou se o registro não for encontrado, a função retorna à tela de busca.
+ *
+ * O menu principal inclui as seguintes opções:
+ * - 1: Buscar Funcionário(a)
+ * - 2: Buscar Cliente(a)
+ * - 3: Buscar Produto
+ * - 4: Cancelar operação e retornar ao menu anterior
+ * - 9: Encerrar o sistema
+ *
+ * A função utiliza chamadas ao sistema para executar scripts Python que manipulam dados em arquivos Excel.
+ * Dependendo da entrada do usuário, as operações subsequentes incluem edição ou exclusão dos registros encontrados.
+ * 
+ * A função faz uso de bibliotecas padrão como `stdio.h` e `stdlib.h`, e assume que scripts Python estão localizados
+ *       em um diretório específico do sistema de arquivos.
+ */
 
 int Busca() {
     int escolha;
@@ -767,6 +879,39 @@ int Busca() {
     }
 }
 
+/**
+ * Exibe um menu para o usuário realizar a pesagem de um produto, cancelar a operação ou encerrar o sistema.
+ *
+ * int Retorna 0 se a operação for concluída com sucesso, e não retorna em caso de encerramento do sistema.
+ *
+ * A função `Pesagem()` apresenta ao usuário um menu com as seguintes opções:
+ * - 1: Pesar produto
+ * - 2: Cancelar operação e retornar ao menu principal
+ * - 9: Encerrar o sistema
+ *
+ * A função utiliza um loop para garantir que a entrada do usuário seja válida, permitindo apenas as opções 1, 2 ou 9.
+ * Caso uma entrada inválida seja fornecida, a função solicita uma nova entrada até que uma opção válida seja escolhida.
+ *
+ * Quando o usuário escolhe a opção 1 (Pesar produto), a função:
+ * - Executa um script Python (`excel_utils.py`) para manipular dados relacionados ao produto.
+ * - Verifica se houve erros durante a execução do script.
+ * - Solicita ao usuário que insira o preço e a quantidade em gramas (peso) do produto.
+ * - Calcula o valor total com base no preço por 100g e a quantidade desejada.
+ * - Exibe o valor total a ser pago pelo produto.
+ *
+ * Se o usuário selecionar a opção 2 (Cancelar operação), a função retorna ao menu principal chamando a função `menu()`.
+ * Se a opção 9 (Encerrar o sistema) for escolhida, a função exibe uma mensagem de encerramento e finaliza o programa.
+ *
+ * A função faz uso das seguintes bibliotecas padrão:
+ * - `stdio.h` para entrada e saída padrão.
+ * - `stdlib.h` para controle de processos e uso do comando `system()`.
+ * - `string.h` para manipulação de strings.
+ *
+ * A função assume que o script Python está localizado em um diretório específico do sistema de arquivos, 
+ * e que ele é capaz de manipular corretamente os dados relacionados ao produto. Também é esperado que 
+ * o script Python retorne mensagens adequadas para indicar se o produto foi encontrado ou não.
+ */
+
 int Pesagem() {
     int escolha;
     system("cls");
@@ -868,6 +1013,35 @@ struct Produto {
     char tipoVenda[MAX_NOME]; // Adicionado tipo de venda
 };
 
+/**
+ * Processa a saída de um script Python e popula um array de estruturas `Produto` com as informações extraídas.
+ *
+ * A saída gerada pelo script Python, que deve ser uma string contendo várias linhas de dados dos produtos.
+ * Um array de estruturas `Produto` onde os dados extraídos serão armazenados.
+ * Um ponteiro para um inteiro que será atualizado com o número total de produtos processados.
+ *
+ * Esta função processa a saída do script Python, onde cada linha da saída contém informações sobre um produto.
+ * As informações são extraídas e armazenadas em um array de estruturas `Produto`, que inclui os seguintes campos:
+ * - `id`: Identificador numérico do produto.
+ * - `nome`: Nome do produto.
+ * - `quantidade`: Quantidade disponível ou comprada.
+ * - `precoPorKg`: Preço do produto por quilograma.
+ * - `tipoVenda`: Tipo de venda (por unidade, por peso, etc.).
+ *
+ * O processo é realizado da seguinte forma:
+ * 1. A função inicializa o contador de `totalProdutos` para 0.
+ * 2. Utiliza `strtok` para dividir a saída do script Python em linhas.
+ * 3. Para cada linha, a função tenta extrair os campos `id`, `nome`, `quantidade`, `precoPorKg` e `tipoVenda` usando `sscanf`.
+ * 4. Se a linha contém os campos necessários, os dados são copiados para a estrutura `Produto` correspondente no array.
+ * 5. O contador de `totalProdutos` é incrementado para refletir o número de produtos processados.
+ * 6. O processo continua até que todas as linhas sejam processadas ou o limite de `MAX_PRODUTOS` seja atingido.
+ *
+ * É importante garantir que a saída do script Python siga o formato esperado para que os dados sejam corretamente extraídos.
+ *       O limite de produtos processados é definido por `MAX_PRODUTOS`, e os tamanhos de strings são limitados por `MAX_NOME`.
+ *
+ * Se a saída do script Python estiver em um formato inesperado ou corrompido, a função pode não processar corretamente os produtos.
+ */
+
 void processar_saida_python(const char *saida, struct Produto produtos[], int *totalProdutos) {
     *totalProdutos = 0;
 
@@ -900,6 +1074,28 @@ void processar_saida_python(const char *saida, struct Produto produtos[], int *t
     }
 }
 
+/**
+ * Executa um script Python para obter dados de produtos, processa a saída e popula um array de estruturas `Produto`.
+ *
+ * Um array de estruturas `Produto` onde os dados extraídos serão armazenados.
+ * Um ponteiro para um inteiro que será atualizado com o número total de produtos processados.
+ *
+ * Esta função realiza as seguintes etapas:
+ * 1. Constrói o comando para executar um script Python (`excel_utils.py`) localizado em um caminho específico.
+ * 2. Executa o comando usando `_popen`, o que cria um processo filho para rodar o script Python e redireciona a saída do script para um pipe.
+ * 3. Lê a saída do script Python através do pipe, armazenando os dados em um buffer (`output`).
+ * 4. Fecha o pipe usando `_pclose`.
+ * 5. Adiciona um terminador nulo ao final da string de saída para garantir que seja uma string C válida.
+ * 6. Chama a função `processar_saida_python` para processar a saída do script e preencher o array `produtos` com as informações extraídas.
+ *
+ * O script Python deve estar localizado no caminho especificado e deve ser capaz de ser executado corretamente através do comando de sistema.
+ * O buffer `output` deve ser grande o suficiente para conter toda a saída do script Python. A constante `BUFFER_SIZE` deve ser definida
+ * adequadamente para acomodar a saída esperada.
+ *
+ * Se ocorrer um erro ao tentar executar o comando ou ao ler a saída, a função exibirá uma mensagem de erro usando `perror`
+ * e retornará sem processar nenhum produto.
+ *
+ */
 
 void ProcessarProdutos(struct Produto produtos[], int *totalProdutos) {
     char command[512];
@@ -968,10 +1164,50 @@ void exibirProdutos(struct Produto produtos[], int totalProdutos) {
     }
 }
 
+/**
+ * Registra as informações de uma compra em um arquivo de texto, incluindo detalhes dos produtos vendidos, o cliente, e a forma de pagamento.
+ *
+ * Esta função realiza as seguintes etapas:
+ * 1. Obtém a data e hora atuais e as formata como uma string.
+ * 2. Usa a data e hora formatadas para gerar o nome do arquivo onde a compra será registrada.
+ * 3. Abre o arquivo para escrita em modo de anexação.
+ * 4. Escreve os detalhes da compra no arquivo, incluindo:
+ *    - Informações sobre cada produto (nome, quantidade, subtotal).
+ *    - Total de itens e total da compra.
+ *    - Nome do cliente.
+ *    - Detalhes da forma de pagamento.
+ * 5. Fecha o arquivo após a escrita.
+ *
+ * A função formata a data e hora como parte do nome do arquivo, garantindo que cada compra seja salva em um arquivo distinto. O arquivo é aberto em modo de anexação (`"a"`), mas como o nome do arquivo é único, cada execução da função resultará na criação de um novo arquivo.
+ *
+ * Se houver falha na abertura do arquivo, a função exibirá uma mensagem de erro usando `perror` e retornará sem salvar a compra.
+ */
+
 void salvarCompra(int idCompra, const char *nomeVendedor, const char *nomeCliente,
 struct Produto itensVendidos[], float quantidadesVendidas[], int numProdutos,
 float totalCompra, int tipoPagamento, int parcelas) {
-    FILE *arquivo = fopen("Compra.txt", "a");
+    time_t t;
+    struct tm *tm_info;
+    char data_hora[20], nome_arquivo[50];
+
+    // Obtém o tempo atual
+    time(&t);
+
+    // Converte o tempo para a estrutura tm
+    tm_info = localtime(&t);
+
+    // Formata a data e hora em uma única string
+    sprintf(data_hora, "%02d/%02d/%04d %02d:%02d:%02d",
+        tm_info->tm_mday,
+        tm_info->tm_mon + 1,
+        tm_info->tm_year + 1900,
+        tm_info->tm_hour,
+        tm_info->tm_min,
+        tm_info->tm_sec);
+
+    sprintf(nome_arquivo, "%s.txt", data_hora);
+
+    FILE *arquivo = fopen(nome_arquivo, "a");
 
     if (arquivo == NULL) {
         perror("Erro ao abrir o arquivo");
@@ -1015,11 +1251,29 @@ float totalCompra, int tipoPagamento, int parcelas) {
     fclose(arquivo);
 }
 
+/**
+ * Gerencia o processo de pagamento de uma compra, incluindo a solicitação de CPF na nota, escolha da forma de pagamento, 
+ * verificação de parcelamento e confirmação de pagamento. Em seguida, registra a compra se o pagamento for bem-sucedido.
+ * 
+ * Esta função realiza as seguintes etapas:
+ * 1. Pergunta ao usuário se deseja incluir CPF na nota e, se sim, solicita o CPF do cliente se não fornecido.
+ * 2. Apresenta as opções de formas de pagamento (cartão de crédito, cartão de débito, dinheiro, PIX).
+ * 3. Caso o pagamento seja com cartão de crédito, verifica se o cliente deseja parcelar a compra e pergunta o número de parcelas (até 3x).
+ * 4. Pede confirmação se o pagamento foi realizado com sucesso.
+ * 5. Se o pagamento for confirmado, chama a função `salvarCompra` para registrar os detalhes da compra.
+ * 6. Caso o pagamento não seja confirmado, exibe uma mensagem indicando que o pagamento não foi realizado.
+ *
+ * A função contém laços para validação de entradas, garantindo que o usuário insira opções válidas (por exemplo, 'Sim' ou 'Nao', número de parcelas, etc.).
+ *
+ * A função assume que os arrays `itensVendidos` e `quantidadesVendidas` têm tamanho suficiente para armazenar `numProdutos` elementos. 
+ * Também assume que a função `Caixa()` existe e é responsável por retornar ao menu principal ou encerrar a operação.
+ */
+
 void Pagamento(int cpf, int idCompra, const char *nomeVendedor, struct Produto itensVendidos[], 
     float quantidadesVendidas[], int numProdutos, float totalCompra) {
     int opcaoPag, qtdParcela;
     char opcaoCPF[50], opcaoParcela[50], confirmacao[50];
-    int parcelas = 1; // Default para pagamentos não parcelados
+    int parcelas = 1, CPFcliente; // Default para pagamentos não parcelados
 
     while (getchar() != '\n');
 
@@ -1034,7 +1288,13 @@ void Pagamento(int cpf, int idCompra, const char *nomeVendedor, struct Produto i
     }
 
     if (strcmp(opcaoCPF, "Sim") == 0) {
-        printf("CPF do(a) cliente: %d\n", cpf);
+        if (cpf != 0) {
+            printf("CPF do(a) cliente: %d", cpf);
+        }else{
+            printf("Digite o CPF usando apenas numeros: ");
+            scanf("%i", &CPFcliente);
+        }
+        
         printf("\n1 - Cartao de credito \n");
         printf("2 - Cartao de debito \n");
         printf("3 - Dinheiro \n");
@@ -1112,10 +1372,28 @@ void Pagamento(int cpf, int idCompra, const char *nomeVendedor, struct Produto i
     Caixa();
 }
 
+/**
+ * Gerencia o processo de venda em um terminal de caixa, permitindo a seleção de produtos, cálculo do total da compra, 
+ * aplicação de descontos e, ao final, chama a função de pagamento.
+ * 
+ *
+ * Esta função realiza as seguintes operações:
+ * 1. Exibe uma interface de terminal para que o operador selecione os produtos e insira as quantidades compradas.
+ * 2. Calcula o total da compra com base nos produtos selecionados e quantidades inseridas.
+ * 3. Aplica um desconto de 10% se o nome do cliente for fornecido.
+ * 4. Permite que o operador finalize a compra ao inserir um ID de produto 0.
+ * 5. Chama a função `Pagamento` para processar o pagamento da compra.
+ *
+ * A função usa laços e validações para garantir que o usuário insira valores válidos (por exemplo, quantidade de produtos, ID do produto).
+ * 
+ * Esta função assume que o array `itensVendidos` e `quantidadesVendidas` podem armazenar até 100 itens. 
+ * Caso o número de itens vendidos possa exceder esse valor, é necessário ajustar os arrays para evitar estouro de memória.
+ */
+
 void caixaTerminal(struct Produto produtos[], int totalProdutos, int cpf, char nome[50], int id) {
     int idProduto;
     float quantidade;
-    float totalCompra = 0;
+    float totalCompra = 0, desconto;
     int numProdutos = 0;
     struct Produto itensVendidos[100];
     float quantidadesVendidas[100];
@@ -1160,6 +1438,7 @@ void caixaTerminal(struct Produto produtos[], int totalProdutos, int cpf, char n
 
         if (strcmp(nome, "") != 0) {
             printf("Nome do(a) cliente: %s\n", nome);
+            printf("(Esta compra esta tendo um desconto de 10 por centro no valor total)\n");
         }
 
         exibirProdutos(produtos, totalProdutos);
@@ -1179,6 +1458,10 @@ void caixaTerminal(struct Produto produtos[], int totalProdutos, int cpf, char n
 
             if (quantidade > 0) {
                 totalCompra += produtoSelecionado.precoPorKg * quantidade;
+                if (strcmp(nome, "") != 0) {
+                    desconto = totalCompra * 0.10;
+                    totalCompra = totalCompra - desconto;
+                }
                 itensVendidos[numProdutos] = produtoSelecionado;
                 quantidadesVendidas[numProdutos] = quantidade;
                 numProdutos++;
@@ -1199,6 +1482,26 @@ typedef struct {
     char nome[100];
     int cpf;
 } Cliente;
+
+/**
+ * Função principal que gerencia a operação de um caixa de supermercado.
+ *
+ * Esta função exibe um menu com opções para continuar uma operação de caixa com ou sem um cliente, 
+ * cancelar a operação atual ou encerrar o sistema. Dependendo da escolha do operador, a função pode:
+ * - Buscar informações de clientes de um arquivo ou banco de dados.
+ * - Iniciar a função `caixaTerminal` para processar uma venda.
+ * - Cancelar a operação atual.
+ * - Encerrar o sistema.
+ *
+ * int Retorna 0 ao final da execução, ou 1 em caso de erro.
+ *
+ * A função segue os seguintes passos:
+ * 1. Processa os produtos disponíveis na loja através da função `ProcessarProdutos`.
+ * 2. Exibe um menu de opções ao operador.
+ * 3. Lida com a escolha do operador, com validação para entradas inválidas.
+ * 4. Dependendo da escolha, pode buscar um cliente em um arquivo/banco de dados utilizando um comando Python, 
+ *    e em seguida, passar as informações para a função `caixaTerminal`.
+ */
 
 int Caixa() {
     int escolha;
@@ -1298,6 +1601,29 @@ int Caixa() {
 
     return 0;
 }
+
+/**
+ * Gerencia as opções selecionadas no menu principal.
+ *
+ * Esta função redireciona o fluxo do programa para diferentes telas ou funcionalidades com base na opção escolhida pelo usuário.
+ * Após selecionar uma opção, a função exibirá uma mensagem de transição e aguardará por um curto período antes de chamar a função correspondente.
+ *
+ * Inteiro que representa a opção selecionada pelo usuário no menu principal.
+ * As opções válidas são:
+ * - 1: Tela de Cadastro
+ * - 2: Tela de Busca
+ * - 3: Tela de Pesagem
+ * - 4: Tela de Caixa
+ *
+ * - Se a opção fornecida for 1, a função exibirá uma mensagem e chamará a função `Cadastro()`.
+ * - Se a opção fornecida for 2, a função exibirá uma mensagem e chamará a função `Busca()`.
+ * - Se a opção fornecida for 3, a função exibirá uma mensagem e chamará a função `Pesagem()`.
+ * - Se a opção fornecida for 4, a função exibirá uma mensagem e chamará a função `Caixa()`.
+ * - Se a opção fornecida não for válida, a função exibirá uma mensagem de erro.
+ * 
+ * Após executar a função correspondente, a função `system("pause")` é chamada para pausar a execução e permitir que o usuário veja a mensagem exibida.
+ *
+ */
 
 void GerenciaOpcoes(int opcao) {
     switch (opcao) {

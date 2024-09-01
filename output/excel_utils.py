@@ -8,6 +8,20 @@ from datetime import datetime
 # Caminho para o arquivo da planilha
 planilha_caminho = 'C:\\Users\\gtava\\OneDrive\\Documentos\\project\\output\\database.xlsx'
 
+"""
+Lê dados de uma aba específica de uma planilha Excel e retorna um DataFrame.
+
+Parâmetros:
+- sheet_name (str): Nome da aba da planilha a ser lida.
+
+Retorna:
+- pandas.DataFrame: Dados da aba, se a leitura for bem-sucedida.
+- None: Se ocorrer um erro, como arquivo não encontrado.
+
+Exceções:
+- FileNotFoundError: Arquivo não encontrado.
+- Exception: Outros erros ao ler o arquivo.
+"""
 def ler_dados_planilha(sheet_name):
     try:
         df = pd.read_excel(planilha_caminho, sheet_name=sheet_name, dtype=str)
@@ -19,6 +33,20 @@ def ler_dados_planilha(sheet_name):
         print(f"Erro ao ler o arquivo: {e}")
         return None
 
+"""
+Lê os dados de uma aba de uma planilha Excel.
+
+Parâmetros:
+- sheet_name (str): Nome da aba a ser lida.
+
+Retorna:
+- pandas.DataFrame: Dados da aba se a leitura for bem-sucedida.
+- None: Se ocorrer um erro, como arquivo não encontrado ou outro problema.
+
+Exceções:
+- FileNotFoundError: Arquivo não encontrado.
+- Exception: Qualquer outro erro ao ler o arquivo.
+"""
 def escrever_dados_planilha(df, sheet_name):
     try:
         with pd.ExcelWriter(planilha_caminho, engine='openpyxl', mode='a', if_sheet_exists='overlay') as writer:
@@ -26,7 +54,20 @@ def escrever_dados_planilha(df, sheet_name):
     except Exception as e:
         print(f"Erro ao escrever no arquivo: {e}")
 
+"""
+Gera um novo ID único para adicionar a um DataFrame.
 
+Parâmetros:
+- df (pandas.DataFrame): DataFrame que contém uma coluna de IDs.
+
+Retorna:
+- int: Novo ID único. Começa em 1 se o DataFrame estiver vazio ou se a coluna 'ID' não existir.
+
+Comportamento:
+- Se o DataFrame estiver vazio ou não tiver uma coluna 'ID', retorna 1.
+- Se a coluna 'ID' não contiver IDs válidos, também retorna 1.
+- Caso contrário, retorna o maior ID existente incrementado de 1.
+"""
 def gerar_id_unico(df):
     """Gera um novo ID único."""
     if df.empty or 'ID' not in df.columns:
@@ -38,6 +79,24 @@ def gerar_id_unico(df):
         else:
             return ids_existentes.max() + 1
 
+"""
+Cadastra um novo funcionário e usuário nas planilhas.
+
+Parâmetros:
+- nome (str): Nome do funcionário.
+- cpf (str): CPF do funcionário.
+- data_nascimento (str): Data de nascimento do funcionário.
+- rg (str): RG do funcionário.
+- username (str): Nome de usuário para login.
+- password (str): Senha para login.
+- tipo (str): Tipo de usuário (e.g., 'admin', 'funcionario').
+
+Comportamento:
+- Lê os dados das planilhas 'Funcionarios' e 'Users'.
+- Verifica se o CPF ou RG já existem na planilha 'Funcionarios' ou se o Username já existe na planilha 'Users'.
+- Se algum desses dados já existir, exibe uma mensagem de erro e aguarda 3 segundos.
+- Caso contrário, gera um novo ID único, adiciona o funcionário e o usuário às respectivas planilhas e grava as atualizações de volta.
+"""
 def cadastrar_funcionario(nome, cpf, data_nascimento, rg, username, password, tipo):
     # Lê os dados atuais das planilhas
     df_funcionarios = ler_dados_planilha('Funcionarios')
@@ -91,6 +150,21 @@ def cadastrar_funcionario(nome, cpf, data_nascimento, rg, username, password, ti
     else:
         print("Erro ao ler as planilhas.")
 
+"""
+Cadastra um novo cliente na planilha 'Clientes'.
+
+Parâmetros:
+- nome (str): Nome do cliente.
+- cpf (str): CPF do cliente.
+- data_nascimento (str): Data de nascimento do cliente.
+- rg (str): RG do cliente.
+
+Comportamento:
+- Lê os dados da planilha 'Clientes'.
+- Verifica se o CPF ou RG já existem na planilha.
+- Se CPF ou RG já estiverem cadastrados, exibe uma mensagem de erro e aguarda 3 segundos.
+- Caso contrário, gera um novo ID único, adiciona o cliente à planilha e grava as alterações.
+"""
 def cadastrar_cliente(nome, cpf, data_nascimento, rg):
     # Lê os dados atuais das planilhas
     df_cliente = ler_dados_planilha('Clientes')
@@ -125,6 +199,22 @@ def cadastrar_cliente(nome, cpf, data_nascimento, rg):
     else:
         print("Erro ao ler as planilhas.")
 
+"""
+Cadastra um novo produto na planilha 'Produtos'.
+
+Parâmetros:
+- nome (str): Nome do produto.
+- preco (str): Preço do produto, deve ser um número válido.
+- qtd_produto (int): Quantidade do produto em estoque.
+- tipo_produto (str): Tipo de venda do produto (ex: unidade, kg).
+
+Comportamento:
+- Lê os dados da planilha 'Produtos'.
+- Gera um novo ID único para o produto.
+- Converte o preço para float e o arredonda para duas casas decimais.
+- Adiciona o novo produto à planilha e grava as alterações.
+- Se o preço não for válido, exibe uma mensagem de erro.
+"""
 def cadastrar_produto(nome, preco, qtd_produto, tipo_produto):
     # Lê os dados atuais das planilhas
     df_produto = ler_dados_planilha('Produtos')
@@ -158,6 +248,22 @@ def cadastrar_produto(nome, preco, qtd_produto, tipo_produto):
     else:
         print("Erro ao ler as planilhas.")
 
+"""
+Valida o login de um usuário verificando as credenciais na planilha 'Users'.
+
+Parâmetros:
+- username (str): Nome de usuário para login.
+- password (str): Senha do usuário para login.
+
+Retorno:
+- bool: Retorna True se o login for bem-sucedido, caso contrário, retorna False.
+
+Comportamento:
+- Lê os dados da planilha 'Users'.
+- Verifica se existe um usuário com o nome de usuário e senha fornecidos.
+- Exibe uma mensagem de sucesso se as credenciais forem corretas, ou uma mensagem de erro se forem incorretas.
+- Se houver um erro ao ler a planilha, exibe uma mensagem de erro e retorna False.
+"""
 def validar_login(username, password):
     df_users = ler_dados_planilha('Users')
     if df_users is not None:
@@ -172,6 +278,19 @@ def validar_login(username, password):
         print("Erro ao ler a planilha de usuários.")
         return False
 
+"""
+Busca e exibe produtos na planilha 'Produtos' com base no nome fornecido.
+
+Parâmetros:
+- nome (str): Nome do produto para a busca. Se for 'Todos', retorna todos os produtos.
+
+Comportamento:
+- Lê os dados da planilha 'Produtos'.
+- Se o nome não for 'Todos', busca produtos cujo nome contenha o texto fornecido, ignorando maiúsculas e minúsculas.
+- Se o nome for 'Todos', exibe todos os produtos.
+- Exibe os resultados encontrados ou uma mensagem informando que nenhum produto foi encontrado.
+- Se houver um erro ao carregar os dados ou se o nome fornecido não for uma string válida, exibe uma mensagem de erro.
+"""
 def buscar_produto(nome):
     df = ler_dados_planilha('Produtos')
     
@@ -193,6 +312,24 @@ def buscar_produto(nome):
     else:
         print("Nenhum produto encontrado.")
 
+"""
+Atualiza os detalhes de um produto na planilha 'Produtos' com base no ID fornecido.
+
+Parâmetros:
+- novo_nome (str): Novo nome do produto. Se não fornecido, o nome atual não é alterado.
+- novo_preco (float): Novo preço do produto. Se não fornecido, o preço atual não é alterado.
+- nova_quantidade (int): Nova quantidade do produto. Se não fornecida, a quantidade atual não é alterada.
+- novo_tipo (str): Novo tipo de venda do produto. Se não fornecido, o tipo atual não é alterado.
+- id_produto (int): ID do produto a ser atualizado.
+
+Comportamento:
+- Lê os dados da planilha 'Produtos'.
+- Localiza o produto pelo ID fornecido.
+- Atualiza os campos do produto com os novos valores fornecidos, se forem informados.
+- Salva as alterações de volta na planilha 'Produtos'.
+- Exibe uma mensagem de sucesso se o produto for atualizado com sucesso.
+- Exibe uma mensagem de erro se o produto com o ID especificado não for encontrado ou se houver um erro ao ler a planilha.
+"""
 def editar_produto(novo_nome, novo_preco, nova_quantidade, novo_tipo, id_produto):
     # Lê os dados atuais da planilha 'Produtos'
     df_produto = ler_dados_planilha('Produtos')
@@ -221,6 +358,20 @@ def editar_produto(novo_nome, novo_preco, nova_quantidade, novo_tipo, id_produto
     else:
         print("Erro ao ler a planilha.")
 
+"""
+Exclui um produto da planilha 'Produtos' com base no ID fornecido.
+
+Parâmetros:
+- id_produto (int): ID do produto a ser excluído.
+
+Comportamento:
+- Carrega a planilha Excel especificada em `planilha_caminho`.
+- Seleciona a planilha 'Produtos'.
+- Percorre as linhas da planilha para encontrar a linha com o ID especificado.
+- Exclui a linha correspondente ao ID fornecido.
+- Salva as alterações no arquivo Excel.
+- Exibe uma mensagem de sucesso após a exclusão do produto.
+"""
 def excluir_produto(id_produto):
     # Carregar o arquivo Excel
     wb = openpyxl.load_workbook(planilha_caminho)
@@ -244,6 +395,18 @@ def excluir_produto(id_produto):
     wb.save(planilha_caminho)
     print(f"Produto foi excluido com sucesso.")
 
+"""
+Busca funcionários na planilha 'Funcionarios' pelo nome fornecido.
+
+Parâmetros:
+- nome (str): Nome do funcionário a ser pesquisado. Se for 'Todos', retorna todos os funcionários.
+
+Comportamento:
+- Lê os dados da planilha 'Funcionarios'.
+- Se `nome` não for 'Todos', verifica se `nome` é uma string e realiza uma busca parcial por nome.
+- Se `nome` for 'Todos', retorna todos os funcionários.
+- Exibe os resultados da busca ou uma mensagem informando que nenhum funcionário foi encontrado.
+"""
 def buscar_funcionario(nome):
     df = ler_dados_planilha('Funcionarios')
 
@@ -261,6 +424,24 @@ def buscar_funcionario(nome):
     else:
         print("Nenhum funcionario encontrado.")
 
+"""
+Atualiza as informações de um funcionário nas planilhas 'Funcionarios' e 'Users'.
+
+Parâmetros:
+- novo_nome (str): Novo nome do funcionário (opcional).
+- novo_cpf (str): Novo CPF do funcionário (opcional).
+- novo_rg (str): Novo RG do funcionário (opcional).
+- nova_data_nasc (str): Nova data de nascimento do funcionário (opcional).
+- novo_user (str): Novo nome de usuário do funcionário (opcional).
+- nova_senha (str): Nova senha do funcionário (opcional).
+- id_funcionario (int): ID do funcionário a ser atualizado.
+
+Comportamento:
+- Lê os dados das planilhas 'Funcionarios' e 'Users'.
+- Atualiza os dados do funcionário nas planilhas se o ID correspondente for encontrado e os novos valores forem fornecidos.
+- Salva as alterações nas planilhas.
+- Exibe uma mensagem de sucesso se as atualizações forem bem-sucedidas, ou mensagens de erro caso contrário.
+"""
 def editar_funcionario(novo_nome, novo_cpf, novo_rg, nova_data_nasc, novo_user, nova_senha, id_funcionario):
     # Lê os dados atuais da planilha 'funcionarios'
     df_funcionario = ler_dados_planilha('Funcionarios')
@@ -314,6 +495,20 @@ def editar_funcionario(novo_nome, novo_cpf, novo_rg, nova_data_nasc, novo_user, 
     if a == 1:
         print("Funcionario atualizado com sucesso!")
 
+"""
+Exclui um funcionário das planilhas 'Funcionarios' e 'Users' com base no ID fornecido.
+
+Parâmetros:
+- id_funcionario (int): ID do funcionário a ser excluído.
+
+Comportamento:
+- Carrega o arquivo Excel e seleciona a planilha 'Funcionarios'.
+- Percorre as linhas da planilha para encontrar e excluir a linha com o ID correspondente.
+- Salva as alterações na planilha 'Funcionarios'.
+- Recarrega o arquivo Excel, seleciona a planilha 'Users', e repete o processo de exclusão para garantir que o funcionário seja removido de ambas as planilhas.
+- Salva as alterações na planilha 'Users'.
+- Exibe uma mensagem de sucesso após a exclusão.
+"""
 def excluir_funcionario(id_funcionario):
     # Carregar o arquivo Excel
     wb = openpyxl.load_workbook(planilha_caminho)
@@ -355,6 +550,21 @@ def excluir_funcionario(id_funcionario):
     wb.save(planilha_caminho)
     print(f"Funcionario(a) foi excluido(a) com sucesso.")
 
+"""
+Busca clientes na planilha 'Clientes' com base no nome ou ID fornecido.
+
+Parâmetros:
+- nome (str): Nome do cliente a ser buscado. Pode ser o nome completo ou o ID do cliente.
+
+Comportamento:
+- Se `nome` for diferente de 'Todos':
+    - Verifica se `nome` é uma string.
+    - Busca clientes cujo nome contém a string fornecida (ignora diferenças de maiúsculas e minúsculas).
+    - Se nenhum cliente for encontrado pelo nome, busca também pelo ID.
+    - Se encontrado, exibe os resultados; caso contrário, exibe uma mensagem informando que nenhum cliente foi encontrado.
+- Se `nome` for 'Todos':
+    - Retorna todos os clientes na planilha.
+"""
 def buscar_cliente(nome):
     df = ler_dados_planilha('Clientes')
 
@@ -377,6 +587,23 @@ def buscar_cliente(nome):
         else:
             print("Nenhum cliente encontrado.")
 
+"""
+Atualiza as informações de um cliente na planilha 'Clientes'.
+
+Parâmetros:
+- novo_nome (str): Novo nome do cliente.
+- novo_cpf (str): Novo CPF do cliente.
+- novo_rg (str): Novo RG do cliente.
+- nova_data_nasc (str): Nova data de nascimento do cliente.
+- id_cliente (int): ID do cliente a ser atualizado.
+
+Comportamento:
+- Lê os dados da planilha 'Clientes'.
+- Localiza o cliente pelo ID fornecido.
+- Se encontrado, atualiza os campos fornecidos com novos valores.
+- Salva as alterações na planilha.
+- Imprime uma mensagem indicando se a atualização foi bem-sucedida ou se o cliente não foi encontrado.
+"""
 def editar_cliente(novo_nome, novo_cpf, novo_rg, nova_data_nasc, id_cliente):
     # Lê os dados atuais da planilha 'clientes'
     df_cliente = ler_dados_planilha('Clientes')
@@ -409,6 +636,18 @@ def editar_cliente(novo_nome, novo_cpf, novo_rg, nova_data_nasc, id_cliente):
 
     print("Cliente atualizado com sucesso!")
 
+"""
+Exclui um cliente da planilha 'Clientes' com base no ID fornecido.
+
+Parâmetros:
+- id_cliente (int): ID do cliente a ser excluído.
+
+Comportamento:
+- Carrega o arquivo Excel e seleciona a planilha 'Clientes'.
+- Percorre as linhas da planilha e encontra a linha com o ID correspondente.
+- Exclui a linha e salva o arquivo Excel.
+- Imprime uma mensagem indicando o sucesso ou falha na exclusão.
+"""
 def excluir_cliente(id_cliente):
     # Carregar o arquivo Excel
     wb = openpyxl.load_workbook(planilha_caminho)
@@ -432,6 +671,22 @@ def excluir_cliente(id_cliente):
     wb.save(planilha_caminho)
     print(f"Cliente foi excluido(a) com sucesso.")
 
+"""
+Processa um arquivo de texto contendo informações de uma venda e salva os dados em uma planilha Excel.
+
+O arquivo de texto deve conter informações sobre o cliente, produtos vendidos, quantidades, subtotais,
+método de pagamento e outros detalhes da venda. As informações são extraídas e organizadas em um DataFrame
+do pandas, que é então salvo em um arquivo Excel.
+
+Parâmetros:
+nome_arquivo (str): O caminho para o arquivo de texto que contém as informações da venda.
+
+Retorna:
+None: Salva os dados processados em uma planilha Excel e imprime uma mensagem de sucesso.
+
+Exceções:
+- Se o arquivo não for encontrado ou houver um erro durante o processamento, a função imprime uma mensagem de erro.
+"""
 def processar_arquivo_venda(nome_arquivo):
     with open(nome_arquivo, 'r') as file:
         lines = file.readlines()
@@ -482,6 +737,17 @@ def processar_arquivo_venda(nome_arquivo):
 
     df.to_excel(planilha_caminho, index=False, engine='openpyxl')
 
+"""
+Executa funções baseadas nos argumentos passados pela linha de comando.
+
+Dependendo dos argumentos fornecidos, o script executa ações como excluir, salvar, buscar, editar, cadastrar,
+e validar login. Cada comando é associado a uma função específica que manipula dados relacionados a produtos,
+funcionários e clientes.
+
+Exceções:
+- Se a quantidade de argumentos não corresponder a nenhum dos casos esperados, o script imprime uma mensagem de uso
+    e encerra com código de status 1.
+"""
 if __name__ == "__main__":
     if "excluir" in sys.argv and "produto" in sys.argv:
         id_produto = sys.argv[3]
