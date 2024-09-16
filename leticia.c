@@ -1,28 +1,39 @@
 #include <stdio.h>
-#include <time.h>
+#include <stdlib.h>
+#include <ctype.h>
+#include <errno.h>
+#include <limits.h>
+
+int is_number(const char *str) {
+    // Verifica se cada caractere da string é um dígito
+    for (int i = 0; str[i] != '\0'; i++) {
+        if (!isdigit(str[i])) {
+            return 0; // Não é um número
+        }
+    }
+    return 1; // É um número
+}
 
 int main() {
-    time_t t;
-    struct tm *tm_info;
-    char data_hora[20];  // Variável para armazenar a data e hora formatada
-
-    // Obtém o tempo atual
-    time(&t);
-
-    // Converte o tempo para a estrutura tm
-    tm_info = localtime(&t);
-
-    // Formata a data e hora em uma única string
-    sprintf(data_hora, "%02d/%02d/%04d %02d:%02d:%02d",
-            tm_info->tm_mday,
-            tm_info->tm_mon + 1,
-            tm_info->tm_year + 1900,
-            tm_info->tm_hour,
-            tm_info->tm_min,
-            tm_info->tm_sec);
-
-    // Imprime a data e hora armazenada na variável
-    printf("Data e Hora Atual: %s\n", data_hora);
-
+    char input[100];
+    
+    printf("Digite um número: ");
+    fgets(input, sizeof(input), stdin);
+    
+    // Remove o caractere de nova linha se presente
+    input[strcspn(input, "\n")] = '\0';
+    
+    // Usar strtol para conversão e validação
+    char *endptr;
+    errno = 0; // Limpa errno antes de chamar strtol
+    long number = strtol(input, &endptr, 10);
+    
+    // Verifica se a conversão foi bem-sucedida e se não houve caracteres inválidos
+    if (errno != 0 || *endptr != '\0' || endptr == input || number < INT_MIN || number > INT_MAX) {
+        printf("Entrada inválida. Por favor, digite apenas números.\n");
+    } else {
+        printf("Você digitou o número: %ld\n", number);
+    }
+    
     return 0;
 }

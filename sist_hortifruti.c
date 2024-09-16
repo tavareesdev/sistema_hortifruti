@@ -93,6 +93,16 @@ int Login() {
     return login_sucesso;
 }
 
+// Função para validar se uma string é numérica
+int eh_numerico(const char *str) {
+    for (int i = 0; str[i]; i++) {
+        if (!isdigit((unsigned char)str[i])) {
+            return 0; // Não é numérico
+        }
+    }
+    return 1; // É numérico
+}
+
 /**
  * Função de cadastro para diferentes tipos de entidades (Funcionário, Cliente, Produto) e opções de controle do sistema.
  *
@@ -216,11 +226,11 @@ int Cadastro() {
         // CPF
         while (1) {
             printf("Digite o CPF do(a) funcionario(a) com apenas numeros: ");
-            if (scanf("%i", &cpf_funcionario) != 1) {
-                printf("Entrada invalida. Tente novamente.\n");
-                while (getchar() != '\n'); // Limpar o buffer
+            if (eh_numerico(cpf_funcionario)) {
+                sscanf(cpf_funcionario, "%d", &cpf_funcionario);
+                break; // Se o CPF for válido, sai do loop
             } else {
-                break;  // Se o CPF for válido, sai do loop
+                printf("Entrada invalida. Tente novamente.\n");
             }
         }
         getchar(); // Limpar o buffer
@@ -317,7 +327,7 @@ int Cadastro() {
 
         // Nome
         while (1) {
-            printf("Digite o nome do usuario: ");
+            printf("Digite o nome do(a) cliente: ");
             fgets(nome_cliente, 100, stdin);
             nome_cliente[strcspn(nome_cliente, "\n")] = 0;  // Remover a quebra de linha
             
