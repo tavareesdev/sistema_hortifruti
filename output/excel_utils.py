@@ -269,7 +269,11 @@ def validar_login(username, password):
     if df_users is not None:
         user_exists = df_users[(df_users['Username'] == username) & (df_users['Password'] == password)]
         if not user_exists.empty:
-            print("Login bem-sucedido!")
+            user_info = user_exists.iloc[0]  # Pega a primeira linha correspondente
+            df_users2 = ler_dados_planilha('Funcionarios')
+            user_exists2 = df_users2[(df_users2['ID'] == user_info['ID'])]
+            user_info2 = user_exists2.iloc[0]  # Pega a primeira linha correspondente
+            print(f"{user_info['ID']},{user_info2['Nome']},{user_info['Tipo']}")
             return True
         else:
             print("Usuario ou senha incorretos.")

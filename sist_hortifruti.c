@@ -33,63 +33,57 @@
  *  5. Se o script retorna "Login bem-sucedido!", a função confirma o login e permite o acesso ao sistema.
  *  6. Se o login falhar, o usuário é solicitado a tentar novamente.
  */
+// Variáveis globais para armazenar o ID, tipo e nome do usuário
+int user_id;
+int user_type;
+char user_name[50];
+
 int Login() {
-    // Declaração de variáveis para armazenar o nome de usuário e senha
     char username[50], password[50];
     int login_sucesso = 0;
 
-    // Loop até que o login seja bem-sucedido
     while (!login_sucesso) {
-        // Solicita o nome de usuário
         printf("Digite seu nome de usuario: ");
         fgets(username, 50, stdin);
-        username[strcspn(username, "\n")] = 0;  // Remove a quebra de linha da entrada
+        username[strcspn(username, "\n")] = 0;
 
-        // Solicita a senha
         printf("Digite sua senha: ");
         fgets(password, 50, stdin);
-        password[strcspn(password, "\n")] = 0;  // Remove a quebra de linha da entrada
+        password[strcspn(password, "\n")] = 0;
 
-        // Monta o comando para executar o script Python com os argumentos do usuário e senha
         char command[512];
         snprintf(command, sizeof(command),
             "python \"C:\\Users\\gtava\\OneDrive\\Documentos\\project\\output\\excel_utils.py\" \"%s\" \"%s\"",
             username, password);
         
-        // Executa o comando e abre um pipe para leitura da saída do script
         FILE* pipe = _popen(command, "r");
         if (!pipe) {
-            // Caso o comando falhe, exibe uma mensagem de erro e retorna 0
             printf("Erro ao executar o comando.\n");
             return 0;
         }
 
-        // Lê a saída do comando (resultado do script)
         char result[256];
         if (fgets(result, sizeof(result), pipe) == NULL) {
-            // Caso ocorra erro ao ler a saída, exibe uma mensagem de erro e fecha o pipe
             printf("Erro ao ler a saída do comando.\n");
             _pclose(pipe);
             return 0;
         }
         _pclose(pipe);
-        
-        // Remove possíveis quebras de linha na saída do script
+
         result[strcspn(result, "\r\n")] = 0;
-        
-        // Verifica se o script retornou a mensagem de login bem-sucedido
-        if (strcmp(result, "Login bem-sucedido!") == 0) {
+
+        // Verifica se o login foi bem-sucedido e captura os dados do usuário
+        if (strstr(result, "Usuario ou senha incorretos.") == NULL && strstr(result, "Erro") == NULL) {
+            sscanf(result, "%d,%[^,],%d", &user_id, user_name, &user_type);
             printf("\nLogin realizado com sucesso!\n");
             printf("Acessando o sistema, aguarde...\n");
-            sleep(3);  // Pausa para simular o tempo de acesso ao sistema
-            login_sucesso = 1;  // Marca que o login foi bem-sucedido
+            sleep(3);
+            login_sucesso = 1;
         } else {
-            // Se o login falhar, exibe uma mensagem e solicita uma nova tentativa
             printf("\nUsuario ou senha incorretos. Tente novamente.\n");
         }
     }
 
-    // Retorna 1 indicando que o login foi bem-sucedido
     return login_sucesso;
 }
 
@@ -188,228 +182,242 @@ int Cadastro() {
     while (getchar() != '\n');
 
     if (escolha == 1) {
-        char nome_funcionario[50], data_nasc_func[50], usuario_func[50], senha_funcionario[50];
-        int cpf_funcionario, rg_funcionario, tipo_funcionario;
+        if (user_type != 3 && user_type != 4) {
+            char nome_funcionario[50], data_nasc_func[50], usuario_func[50], senha_funcionario[50];
+            int cpf_funcionario, rg_funcionario, tipo_funcionario;
 
-        // Nome do Funcionário
-        while (1) {
-            printf("\nDigite o nome do(a) novo(a) funcionario(a) sem o uso de caracteres especiais (ou 'exit' para voltar): ");
-            fgets(nome_funcionario, 50, stdin);
-            nome_funcionario[strcspn(nome_funcionario, "\n")] = 0;  // Remover a quebra de linha
-            
-            if (strcmp(nome_funcionario, "exit") == 0) {
-                Cadastro();  // Voltar ao menu
-                return;
-            } else if (strlen(nome_funcionario) == 0) {
-                printf("Nome do funcionario nao pode ser vazio. Tente novamente.\n");
-            } else {
-                break;  // Se o nome não estiver vazio, sai do loop
-            }
-        }
-
-        // Data de Nascimento
-        while (1) {
-            printf("Digite a data de nascimento no seguinte formato: dd/mm/yyyy (ou 'exit' para voltar): ");
-            fgets(data_nasc_func, 50, stdin);
-            data_nasc_func[strcspn(data_nasc_func, "\n")] = 0;  // Remover a quebra de linha
-            
-            if (strcmp(data_nasc_func, "exit") == 0) {
-                Cadastro();  // Voltar ao menu
-                return;
-            } else if (strlen(data_nasc_func) == 0) {
-                printf("Data de nascimento nao pode ser vazia. Tente novamente.\n");
-            } else {
-                break;  // Se a data de nascimento não estiver vazia, sai do loop
-            }
-        }
-
-        // CPF
-        while (1) {
-            printf("Digite o CPF do(a) funcionario(a) com apenas numeros: ");
-            if (eh_numerico(cpf_funcionario)) {
-                sscanf(cpf_funcionario, "%d", &cpf_funcionario);
-                break; // Se o CPF for válido, sai do loop
-            } else {
-                printf("Entrada invalida. Tente novamente.\n");
-            }
-        }
-        getchar(); // Limpar o buffer
-
-        // RG
-        while (1) {
-            printf("Digite o RG do(a) funcionario(a) com apenas numeros: ");
-            if (scanf("%i", &rg_funcionario) != 1) {
-                printf("Entrada invalida. Tente novamente.\n");
-                while (getchar() != '\n'); // Limpar o buffer
-            } else {
-                break;  // Se o RG for válido, sai do loop
-            }
-        }
-        getchar(); // Limpar o buffer
-
-        // Nome de Usuário
-        while (1) {
-            printf("Digite um nome de usuario para o(a) funcionario(a) sem o uso de caracteres especiais (ou 'exit' para voltar): ");
-            fgets(usuario_func, 50, stdin);
-            usuario_func[strcspn(usuario_func, "\n")] = 0;  // Remover a quebra de linha
-            
-            if (strcmp(usuario_func, "exit") == 0) {
-                Cadastro();  // Voltar ao menu
-                return;
-            } else if (strlen(usuario_func) == 0) {
-                printf("Nome de usuario nao pode ser vazio. Tente novamente.\n");
-            } else {
-                break;  // Se o nome de usuário não estiver vazio, sai do loop
-            }
-        }
-
-        // Senha
-        while (1) {
-            printf("Digite uma senha para o(a) funcionario(a) sem o uso de caracteres especiais (ou 'exit' para voltar): ");
-            fgets(senha_funcionario, 50, stdin);
-            senha_funcionario[strcspn(senha_funcionario, "\n")] = 0;  // Remover a quebra de linha
-            
-            if (strcmp(senha_funcionario, "exit") == 0) {
-                Cadastro();  // Voltar ao menu
-                return;
-            } else if (strlen(senha_funcionario) == 0) {
-                printf("Senha nao pode ser vazia. Tente novamente.\n");
-            } else {
-                break;  // Se a senha não estiver vazia, sai do loop
-            }
-        }
-
-        // Tipo de Usuário
-        while (1) {
-            printf("Digite o tipo de usuario para o(a) funcionario(a), sendo 1 = Administrador, 2 = Gerente, 3 = Supervisor, 4 = Funcionario: ");
-            if (scanf("%i", &tipo_funcionario) != 1 || tipo_funcionario < 1 || tipo_funcionario > 4) {
-                printf("Tipo de usuario invalido. Tente novamente.\n");
-                while (getchar() != '\n'); // Limpar o buffer
-            } else {
-                break;  // Se o tipo de usuário for válido, sai do loop
-            }
-        }
-        getchar(); // Limpar o buffer
-
-        // Chamar a função Python para cadastrar o funcionário e capturar a saída
-        char command[512];
-        snprintf(command, sizeof(command),
-            "python \"C:\\Users\\gtava\\OneDrive\\Documentos\\project\\output\\excel_utils.py\" \"%s\" \"%d\" \"%s\" \"%d\" \"%s\" \"%s\" \"%d\"",
-            nome_funcionario, cpf_funcionario, data_nasc_func, rg_funcionario, usuario_func, senha_funcionario, tipo_funcionario);
-        
-        FILE *fp;
-        char output[1035];
-
-        // Usar popen para capturar a saída do comando Python
-        fp = popen(command, "r");
-        if (fp == NULL) {
-            printf("Falha ao executar o comando.\n");
-            exit(1);
-        }
-
-        // Ler a saída do comando
-        while (fgets(output, sizeof(output), fp) != NULL) {
-            printf("%s", output);
-            if (strstr(output, "Erro") != NULL) {
-                // Se houver uma mensagem de erro, retorne para a tela de cadastro
-                pclose(fp);
-                sleep(4);
-                Cadastro();  // Voltar ao menu de cadastro
-                return;
-            }
-        }
-
-        // Fechar o processo
-        pclose(fp);
-    } else if (escolha == 2) {
-        char nome_cliente[50], data_nasc_cli[50];
-        int cpf_cliente, rg_cliente;
-
-        // Nome
-        while (1) {
-            printf("Digite o nome do(a) cliente: ");
-            fgets(nome_cliente, 100, stdin);
-            nome_cliente[strcspn(nome_cliente, "\n")] = 0;  // Remover a quebra de linha
-            
-            if (strlen(nome_cliente) == 0) {
-                printf("Nome nao pode estar vazio. Tente novamente.\n");
-            } else {
-                if (strcmp(nome_cliente, "exit") == 0) {
+            // Nome do Funcionário
+            while (1) {
+                printf("\nDigite o nome do(a) novo(a) funcionario(a) sem o uso de caracteres especiais (ou 'exit' para voltar): ");
+                fgets(nome_funcionario, 50, stdin);
+                nome_funcionario[strcspn(nome_funcionario, "\n")] = 0;  // Remover a quebra de linha
+                
+                if (strcmp(nome_funcionario, "exit") == 0) {
                     Cadastro();  // Voltar ao menu
                     return;
-                }else{
+                } else if (strlen(nome_funcionario) == 0) {
+                    printf("Nome do funcionario nao pode ser vazio. Tente novamente.\n");
+                } else {
                     break;  // Se o nome não estiver vazio, sai do loop
                 }
             }
-        }
 
-        // CPF
-        while (1) {
-            printf("Digite o CPF do(a) cliente com apenas numeros: ");
-            if (scanf("%i", &cpf_cliente) != 1) {
-                printf("Entrada invalida. Tente novamente.\n");
-                while (getchar() != '\n'); // Limpar o buffer
-            } else {
-                break;  // Se o CPF for válido, sai do loop
+            // Data de Nascimento
+            while (1) {
+                printf("Digite a data de nascimento no seguinte formato: dd/mm/yyyy (ou 'exit' para voltar): ");
+                fgets(data_nasc_func, 50, stdin);
+                data_nasc_func[strcspn(data_nasc_func, "\n")] = 0;  // Remover a quebra de linha
+                
+                if (strcmp(data_nasc_func, "exit") == 0) {
+                    Cadastro();  // Voltar ao menu
+                    return;
+                } else if (strlen(data_nasc_func) == 0) {
+                    printf("Data de nascimento nao pode ser vazia. Tente novamente.\n");
+                } else {
+                    break;  // Se a data de nascimento não estiver vazia, sai do loop
+                }
             }
-        }
-        getchar(); // Limpar o buffer
 
-        // RG
-        while (1) {
-            printf("Digite o RG do(a) cliente com apenas numeros: ");
-            if (scanf("%i", &rg_cliente) != 1) {
-                printf("Entrada invalida. Tente novamente.\n");
-                while (getchar() != '\n'); // Limpar o buffer
-            } else {
-                break;  // Se o RG for válido, sai do loop
+            // CPF
+            while (1) {
+                printf("Digite o CPF do(a) funcionario(a) com apenas numeros: ");
+                if (eh_numerico(cpf_funcionario)) {
+                    sscanf(cpf_funcionario, "%d", &cpf_funcionario);
+                    break; // Se o CPF for válido, sai do loop
+                } else {
+                    printf("Entrada invalida. Tente novamente.\n");
+                }
             }
-        }
-        getchar(); // Limpar o buffer
+            getchar(); // Limpar o buffer
 
-        // Data de Nascimento
-        while (1) {
-            printf("Digite a data de nascimento do usuario (dd/mm/aaaa): ");
-            fgets(data_nasc_cli, 11, stdin);
-            data_nasc_cli[strcspn(data_nasc_cli, "\n")] = 0;  // Remover a quebra de linha
+            // RG
+            while (1) {
+                printf("Digite o RG do(a) funcionario(a) com apenas numeros: ");
+                if (scanf("%i", &rg_funcionario) != 1) {
+                    printf("Entrada invalida. Tente novamente.\n");
+                    while (getchar() != '\n'); // Limpar o buffer
+                } else {
+                    break;  // Se o RG for válido, sai do loop
+                }
+            }
+            getchar(); // Limpar o buffer
+
+            // Nome de Usuário
+            while (1) {
+                printf("Digite um nome de usuario para o(a) funcionario(a) sem o uso de caracteres especiais (ou 'exit' para voltar): ");
+                fgets(usuario_func, 50, stdin);
+                usuario_func[strcspn(usuario_func, "\n")] = 0;  // Remover a quebra de linha
+                
+                if (strcmp(usuario_func, "exit") == 0) {
+                    Cadastro();  // Voltar ao menu
+                    return;
+                } else if (strlen(usuario_func) == 0) {
+                    printf("Nome de usuario nao pode ser vazio. Tente novamente.\n");
+                } else {
+                    break;  // Se o nome de usuário não estiver vazio, sai do loop
+                }
+            }
+
+            // Senha
+            while (1) {
+                printf("Digite uma senha para o(a) funcionario(a) sem o uso de caracteres especiais (ou 'exit' para voltar): ");
+                fgets(senha_funcionario, 50, stdin);
+                senha_funcionario[strcspn(senha_funcionario, "\n")] = 0;  // Remover a quebra de linha
+                
+                if (strcmp(senha_funcionario, "exit") == 0) {
+                    Cadastro();  // Voltar ao menu
+                    return;
+                } else if (strlen(senha_funcionario) == 0) {
+                    printf("Senha nao pode ser vazia. Tente novamente.\n");
+                } else {
+                    break;  // Se a senha não estiver vazia, sai do loop
+                }
+            }
+
+            // Tipo de Usuário
+            while (1) {
+                printf("Digite o tipo de usuario para o(a) funcionario(a), sendo 1 = Administrador, 2 = Gerente, 3 = Supervisor, 4 = Funcionario: ");
+                if (scanf("%i", &tipo_funcionario) != 1 || tipo_funcionario < 1 || tipo_funcionario > 4) {
+                    printf("Tipo de usuario invalido. Tente novamente.\n");
+                    while (getchar() != '\n'); // Limpar o buffer
+                } else {
+                    break;  // Se o tipo de usuário for válido, sai do loop
+                }
+            }
+            getchar(); // Limpar o buffer
+
+            // Chamar a função Python para cadastrar o funcionário e capturar a saída
+            char command[512];
+            snprintf(command, sizeof(command),
+                "python \"C:\\Users\\gtava\\OneDrive\\Documentos\\project\\output\\excel_utils.py\" \"%s\" \"%d\" \"%s\" \"%d\" \"%s\" \"%s\" \"%d\"",
+                nome_funcionario, cpf_funcionario, data_nasc_func, rg_funcionario, usuario_func, senha_funcionario, tipo_funcionario);
             
-            if (strlen(data_nasc_cli) == 0) {
-                printf("Data de nascimento nao pode estar vazia. Tente novamente.\n");
-            } else {
-                break;  // Se a data de nascimento não estiver vazia, sai do loop
+            FILE *fp;
+            char output[1035];
+
+            // Usar popen para capturar a saída do comando Python
+            fp = popen(command, "r");
+            if (fp == NULL) {
+                printf("Falha ao executar o comando.\n");
+                exit(1);
             }
-        }
 
-        // Chamar a função Python para cadastrar o funcionário e capturar a saída
-        char command[512];
-        snprintf(command, sizeof(command),
-            "python \"C:\\Users\\gtava\\OneDrive\\Documentos\\project\\output\\excel_utils.py\" cadastrar cliente \"%s\" \"%d\" \"%s\" \"%d\"",
-            nome_cliente, cpf_cliente, data_nasc_cli, rg_cliente);
-        
-        FILE *fp;
-        char output[1035];
-
-        // Usar popen para capturar a saída do comando Python
-        fp = popen(command, "r");
-        if (fp == NULL) {
-            printf("Falha ao executar o comando.\n");
-            exit(1);
-        }
-
-        // Ler a saída do comando
-        while (fgets(output, sizeof(output), fp) != NULL) {
-            printf("%s", output);
-            if (strstr(output, "Erro") != NULL) {
-                // Se houver uma mensagem de erro, retorne para a tela de cadastro
-                pclose(fp);
-                sleep(4);
-                Cadastro();  // Voltar ao menu de cadastro
-                return;
+            // Ler a saída do comando
+            while (fgets(output, sizeof(output), fp) != NULL) {
+                printf("%s", output);
+                if (strstr(output, "Erro") != NULL) {
+                    // Se houver uma mensagem de erro, retorne para a tela de cadastro
+                    pclose(fp);
+                    sleep(4);
+                    Cadastro();  // Voltar ao menu de cadastro
+                    return;
+                }
             }
-        }
 
-        // Fechar o processo
-        pclose(fp);
+            // Fechar o processo
+            pclose(fp);
+        } else {
+            printf("\nVoce nao tem permissao para acessar essa funcionalidade!\n");
+            printf("\nVoltando para o menu de cadastro, aguarde...");
+            sleep(2);
+            Cadastro();
+        }
+    } else if (escolha == 2) {
+        if (user_type != 4) {
+            char nome_cliente[50], data_nasc_cli[50];
+            int cpf_cliente, rg_cliente;
+
+            // Nome
+            while (1) {
+                printf("Digite o nome do(a) cliente: ");
+                fgets(nome_cliente, 100, stdin);
+                nome_cliente[strcspn(nome_cliente, "\n")] = 0;  // Remover a quebra de linha
+                
+                if (strlen(nome_cliente) == 0) {
+                    printf("Nome nao pode estar vazio. Tente novamente.\n");
+                } else {
+                    if (strcmp(nome_cliente, "exit") == 0) {
+                        Cadastro();  // Voltar ao menu
+                        return;
+                    }else{
+                        break;  // Se o nome não estiver vazio, sai do loop
+                    }
+                }
+            }
+
+            // CPF
+            while (1) {
+                printf("Digite o CPF do(a) cliente com apenas numeros: ");
+                if (scanf("%i", &cpf_cliente) != 1) {
+                    printf("Entrada invalida. Tente novamente.\n");
+                    while (getchar() != '\n'); // Limpar o buffer
+                } else {
+                    break;  // Se o CPF for válido, sai do loop
+                }
+            }
+            getchar(); // Limpar o buffer
+
+            // RG
+            while (1) {
+                printf("Digite o RG do(a) cliente com apenas numeros: ");
+                if (scanf("%i", &rg_cliente) != 1) {
+                    printf("Entrada invalida. Tente novamente.\n");
+                    while (getchar() != '\n'); // Limpar o buffer
+                } else {
+                    break;  // Se o RG for válido, sai do loop
+                }
+            }
+            getchar(); // Limpar o buffer
+
+            // Data de Nascimento
+            while (1) {
+                printf("Digite a data de nascimento do usuario (dd/mm/aaaa): ");
+                fgets(data_nasc_cli, 11, stdin);
+                data_nasc_cli[strcspn(data_nasc_cli, "\n")] = 0;  // Remover a quebra de linha
+                
+                if (strlen(data_nasc_cli) == 0) {
+                    printf("Data de nascimento nao pode estar vazia. Tente novamente.\n");
+                } else {
+                    break;  // Se a data de nascimento não estiver vazia, sai do loop
+                }
+            }
+
+            // Chamar a função Python para cadastrar o funcionário e capturar a saída
+            char command[512];
+            snprintf(command, sizeof(command),
+                "python \"C:\\Users\\gtava\\OneDrive\\Documentos\\project\\output\\excel_utils.py\" cadastrar cliente \"%s\" \"%d\" \"%s\" \"%d\"",
+                nome_cliente, cpf_cliente, data_nasc_cli, rg_cliente);
+            
+            FILE *fp;
+            char output[1035];
+
+            // Usar popen para capturar a saída do comando Python
+            fp = popen(command, "r");
+            if (fp == NULL) {
+                printf("Falha ao executar o comando.\n");
+                exit(1);
+            }
+
+            // Ler a saída do comando
+            while (fgets(output, sizeof(output), fp) != NULL) {
+                printf("%s", output);
+                if (strstr(output, "Erro") != NULL) {
+                    // Se houver uma mensagem de erro, retorne para a tela de cadastro
+                    pclose(fp);
+                    sleep(4);
+                    Cadastro();  // Voltar ao menu de cadastro
+                    return;
+                }
+            }
+
+            // Fechar o processo
+            pclose(fp);
+        } else {
+            printf("\nVoce nao tem permissao para acessar essa funcionalidade!\n");
+            printf("\nVoltando para o menu de cadastro, aguarde...");
+            sleep(2);
+            Cadastro();
+        }
     } else if (escolha == 3) {
         char nome_produto[50], tipo_venda[50];
         int qtd_produto;
@@ -545,224 +553,238 @@ int Busca() {
     while (getchar() != '\n');
 
     if (escolha == 1) {
-        char nome[50];
-        int opcao = 0;
+        if (user_type != 3 && user_type != 4) {
+            char nome[50];
+            int opcao = 0;
 
-        printf("\nDigite o nome do(a) funcionario(a) para buscar (ou digite 'Todos' para visualizar todos os(as) funcionarios(as)): ");
-        fgets(nome, 50, stdin);
-        nome[strcspn(nome, "\n")] = 0; 
+            printf("\nDigite o nome do(a) funcionario(a) para buscar (ou digite 'Todos' para visualizar todos os(as) funcionarios(as)): ");
+            fgets(nome, 50, stdin);
+            nome[strcspn(nome, "\n")] = 0; 
 
-        char command[512];
-        snprintf(command, sizeof(command),
-            "python \"C:\\Users\\gtava\\OneDrive\\Documentos\\project\\output\\excel_utils.py\" buscar funcionario \"%s\"", nome);
-        system(command);
+            char command[512];
+            snprintf(command, sizeof(command),
+                "python \"C:\\Users\\gtava\\OneDrive\\Documentos\\project\\output\\excel_utils.py\" buscar funcionario \"%s\"", nome);
+            system(command);
 
-        FILE *fp;
-        char output[1035];
+            FILE *fp;
+            char output[1035];
 
-        // Usar popen para capturar a saída do comando Python
-        fp = popen(command, "r");
-        if (fp == NULL) {
-            printf("Falha ao executar o comando.\n");
-            exit(1);
-        }
+            // Usar popen para capturar a saída do comando Python
+            fp = popen(command, "r");
+            if (fp == NULL) {
+                printf("Falha ao executar o comando.\n");
+                exit(1);
+            }
 
-        while (fgets(output, sizeof(output), fp) != NULL) {
-            if (strstr(output, "Nenhum") != NULL) {
-                // Se houver uma mensagem de erro, retorne para a tela de cadastro
-                pclose(fp);
-                sleep(2);
-                Busca();  // Voltar ao menu de cadastro
-                return 0;
-            } else{
-                printf("1 - Editar funcionario(a) \n");
-                printf("2 - Excluir funcionario(a) \n");
-                printf("3 - Voltar\n\n");
-                printf("Digite uma das opcoes para prosseguir: ");
-                scanf("%i", &opcao);
-
-                while (opcao < 1 || opcao > 3) {
-                    printf("Opcao invalida! Digite uma opcao valida: ");
+            while (fgets(output, sizeof(output), fp) != NULL) {
+                if (strstr(output, "Nenhum") != NULL) {
+                    // Se houver uma mensagem de erro, retorne para a tela de cadastro
+                    pclose(fp);
+                    sleep(2);
+                    Busca();  // Voltar ao menu de cadastro
+                    return 0;
+                } else{
+                    printf("1 - Editar funcionario(a) \n");
+                    printf("2 - Excluir funcionario(a) \n");
+                    printf("3 - Voltar\n\n");
+                    printf("Digite uma das opcoes para prosseguir: ");
                     scanf("%i", &opcao);
-                }
 
-                // Limpa o buffer do teclado
-                while (getchar() != '\n');
+                    while (opcao < 1 || opcao > 3) {
+                        printf("Opcao invalida! Digite uma opcao valida: ");
+                        scanf("%i", &opcao);
+                    }
 
-                if (opcao == 1) {
-                    char novo_nome[50], novo_cpf[50], novo_rg[50], nova_data_nasc[50], novo_usuario[50], nova_senha[50];
-                    int id_funcionario;
+                    // Limpa o buffer do teclado
+                    while (getchar() != '\n');
 
-                    printf("\nDigite o ID do(a) funcionario(a) conforme a tabela acima: ");
-                    scanf("%i", &id_funcionario);
+                    if (opcao == 1) {
+                        char novo_nome[50], novo_cpf[50], novo_rg[50], nova_data_nasc[50], novo_usuario[50], nova_senha[50];
+                        int id_funcionario;
 
-                    while (getchar() != '\n'); // Limpa o buffer
+                        printf("\nDigite o ID do(a) funcionario(a) conforme a tabela acima: ");
+                        scanf("%i", &id_funcionario);
 
-                    printf("Digite o novo nome do(a) funcionario(a) (ou pressione Enter para manter o atual): ");
-                    fgets(novo_nome, sizeof(novo_nome), stdin);
-                    novo_nome[strcspn(novo_nome, "\n")] = 0;
+                        while (getchar() != '\n'); // Limpa o buffer
 
-                    printf("Digite o novo CPF do(a) funcionario(a) (ou pressione Enter para manter o atual): ");
-                    fgets(novo_cpf, sizeof(novo_cpf), stdin);
-                    novo_cpf[strcspn(novo_cpf, "\n")] = 0;
+                        printf("Digite o novo nome do(a) funcionario(a) (ou pressione Enter para manter o atual): ");
+                        fgets(novo_nome, sizeof(novo_nome), stdin);
+                        novo_nome[strcspn(novo_nome, "\n")] = 0;
 
-                    printf("Digite o novo RG do(a) funcionario(a) (ou pressione Enter para manter o atual): ");
-                    fgets(novo_rg, sizeof(novo_rg), stdin);
-                    novo_rg[strcspn(novo_rg, "\n")] = 0;
+                        printf("Digite o novo CPF do(a) funcionario(a) (ou pressione Enter para manter o atual): ");
+                        fgets(novo_cpf, sizeof(novo_cpf), stdin);
+                        novo_cpf[strcspn(novo_cpf, "\n")] = 0;
 
-                    printf("Digite a nova data de nascimento do(a) funcionario(a) (ou pressione Enter para manter a atual): ");
-                    fgets(nova_data_nasc, sizeof(nova_data_nasc), stdin);
-                    nova_data_nasc[strcspn(nova_data_nasc, "\n")] = 0;
+                        printf("Digite o novo RG do(a) funcionario(a) (ou pressione Enter para manter o atual): ");
+                        fgets(novo_rg, sizeof(novo_rg), stdin);
+                        novo_rg[strcspn(novo_rg, "\n")] = 0;
 
-                    printf("Digite o novo nome de usuario do(a) funcionario(a) (ou pressione Enter para manter a atual): ");
-                    fgets(novo_usuario, sizeof(novo_usuario), stdin);
-                    novo_usuario[strcspn(novo_usuario, "\n")] = 0;
+                        printf("Digite a nova data de nascimento do(a) funcionario(a) (ou pressione Enter para manter a atual): ");
+                        fgets(nova_data_nasc, sizeof(nova_data_nasc), stdin);
+                        nova_data_nasc[strcspn(nova_data_nasc, "\n")] = 0;
 
-                    printf("Digite a nova senha do(a) funcionario(a) (ou pressione Enter para manter a atual): ");
-                    fgets(nova_senha, sizeof(nova_senha), stdin);
-                    nova_senha[strcspn(nova_senha, "\n")] = 0;
+                        printf("Digite o novo nome de usuario do(a) funcionario(a) (ou pressione Enter para manter a atual): ");
+                        fgets(novo_usuario, sizeof(novo_usuario), stdin);
+                        novo_usuario[strcspn(novo_usuario, "\n")] = 0;
 
-                    snprintf(command, sizeof(command),
-                        "python \"C:\\Users\\gtava\\OneDrive\\Documentos\\project\\output\\excel_utils.py\" editar funcionario \"%i\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"",
-                        id_funcionario, novo_nome, novo_cpf, novo_rg, nova_data_nasc, novo_usuario, nova_senha);
-                    system(command);
-                } else if (opcao == 2) {
-                    int id_funcionario;
-                    char confirmacao[50];
+                        printf("Digite a nova senha do(a) funcionario(a) (ou pressione Enter para manter a atual): ");
+                        fgets(nova_senha, sizeof(nova_senha), stdin);
+                        nova_senha[strcspn(nova_senha, "\n")] = 0;
 
-                    printf("\nDigite o ID do(a) funcionario(a) conforme a tabela acima: ");
-                    scanf("%i", &id_funcionario);
+                        snprintf(command, sizeof(command),
+                            "python \"C:\\Users\\gtava\\OneDrive\\Documentos\\project\\output\\excel_utils.py\" editar funcionario \"%i\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"",
+                            id_funcionario, novo_nome, novo_cpf, novo_rg, nova_data_nasc, novo_usuario, nova_senha);
+                        system(command);
+                    } else if (opcao == 2) {
+                        int id_funcionario;
+                        char confirmacao[50];
 
-                    while (getchar() != '\n'); // Limpa o buffer
+                        printf("\nDigite o ID do(a) funcionario(a) conforme a tabela acima: ");
+                        scanf("%i", &id_funcionario);
 
-                    printf("Tem certeza que deseja exclui-lo(a)? (Digite 'Sim' ou 'Nao'): ");
-                    fgets(confirmacao, sizeof(confirmacao), stdin);
-                    confirmacao[strcspn(confirmacao, "\n")] = 0;
+                        while (getchar() != '\n'); // Limpa o buffer
 
-                    while (strcmp(confirmacao, "Sim") != 0 && strcmp(confirmacao, "Nao") != 0) {
-                        printf("Opcao invalida! Digite 'Sim' ou 'Nao': ");
+                        printf("Tem certeza que deseja exclui-lo(a)? (Digite 'Sim' ou 'Nao'): ");
                         fgets(confirmacao, sizeof(confirmacao), stdin);
                         confirmacao[strcspn(confirmacao, "\n")] = 0;
-                    }
 
-                    if (strcmp(confirmacao, "Sim") == 0) {
-                        snprintf(command, sizeof(command),
-                            "python \"C:\\Users\\gtava\\OneDrive\\Documentos\\project\\output\\excel_utils.py\" excluir funcionario \"%i\"",
-                            id_funcionario);
-                        system(command);
-                    } else {
+                        while (strcmp(confirmacao, "Sim") != 0 && strcmp(confirmacao, "Nao") != 0) {
+                            printf("Opcao invalida! Digite 'Sim' ou 'Nao': ");
+                            fgets(confirmacao, sizeof(confirmacao), stdin);
+                            confirmacao[strcspn(confirmacao, "\n")] = 0;
+                        }
+
+                        if (strcmp(confirmacao, "Sim") == 0) {
+                            snprintf(command, sizeof(command),
+                                "python \"C:\\Users\\gtava\\OneDrive\\Documentos\\project\\output\\excel_utils.py\" excluir funcionario \"%i\"",
+                                id_funcionario);
+                            system(command);
+                        } else {
+                            return Busca();
+                        }
+                    } else if (opcao == 3) {
                         return Busca();
                     }
-                } else if (opcao == 3) {
-                    return Busca();
                 }
             }
+        } else {
+            printf("\nVoce nao tem permissao para acessar essa funcionalidade!\n");
+            printf("\nVoltando para o menu de busca, aguarde...");
+            sleep(2);
+            Busca();
         }
     } if (escolha == 2) {
-        char nome[50];
-        int opcao = 0;
+        if (user_type != 4) {
+            char nome[50];
+            int opcao = 0;
 
-        printf("\nDigite o nome do(a) cliente(a) para buscar (ou digite 'Todos' para visualizar todos os(as) clientes(as)): ");
-        fgets(nome, 50, stdin);
-        nome[strcspn(nome, "\n")] = 0; 
+            printf("\nDigite o nome do(a) cliente(a) para buscar (ou digite 'Todos' para visualizar todos os(as) clientes(as)): ");
+            fgets(nome, 50, stdin);
+            nome[strcspn(nome, "\n")] = 0; 
 
-        char command[512];
-        snprintf(command, sizeof(command),
-            "python \"C:\\Users\\gtava\\OneDrive\\Documentos\\project\\output\\excel_utils.py\" buscar cliente \"%s\"", nome);
-        system(command);
+            char command[512];
+            snprintf(command, sizeof(command),
+                "python \"C:\\Users\\gtava\\OneDrive\\Documentos\\project\\output\\excel_utils.py\" buscar cliente \"%s\"", nome);
+            system(command);
 
-        FILE *fp;
-        char output[1035];
+            FILE *fp;
+            char output[1035];
 
-        // Usar popen para capturar a saída do comando Python
-        fp = popen(command, "r");
-        if (fp == NULL) {
-            printf("Falha ao executar o comando.\n");
-            exit(1);
-        }
+            // Usar popen para capturar a saída do comando Python
+            fp = popen(command, "r");
+            if (fp == NULL) {
+                printf("Falha ao executar o comando.\n");
+                exit(1);
+            }
 
-        while (fgets(output, sizeof(output), fp) != NULL) {
-            if (strstr(output, "Nenhum") != NULL) {
-                // Se houver uma mensagem de erro, retorne para a tela de cadastro
-                pclose(fp);
-                sleep(2);
-                Busca();  // Voltar ao menu de cadastro
-                return;
-            } else{
-                printf("1 - Editar cliente(a) \n");
-                printf("2 - Excluir cliente(a) \n");
-                printf("3 - Voltar\n\n");
-                printf("Digite uma das opcoes para prosseguir: ");
-                scanf("%i", &opcao);
-
-                while (opcao < 1 || opcao > 3) {
-                    printf("Opcao invalida! Digite uma opcao valida: ");
+            while (fgets(output, sizeof(output), fp) != NULL) {
+                if (strstr(output, "Nenhum") != NULL) {
+                    // Se houver uma mensagem de erro, retorne para a tela de cadastro
+                    pclose(fp);
+                    sleep(2);
+                    Busca();  // Voltar ao menu de cadastro
+                    return;
+                } else{
+                    printf("1 - Editar cliente(a) \n");
+                    printf("2 - Excluir cliente(a) \n");
+                    printf("3 - Voltar\n\n");
+                    printf("Digite uma das opcoes para prosseguir: ");
                     scanf("%i", &opcao);
-                }
 
-                // Limpa o buffer do teclado
-                while (getchar() != '\n');
+                    while (opcao < 1 || opcao > 3) {
+                        printf("Opcao invalida! Digite uma opcao valida: ");
+                        scanf("%i", &opcao);
+                    }
 
-                if (opcao == 1) {
-                    char novo_nome[50], novo_cpf[50], novo_rg[50], nova_data_nasc[50];
-                    int id_cliente;
+                    // Limpa o buffer do teclado
+                    while (getchar() != '\n');
 
-                    printf("\nDigite o ID do(a) cliente conforme a tabela acima: ");
-                    scanf("%i", &id_cliente);
+                    if (opcao == 1) {
+                        char novo_nome[50], novo_cpf[50], novo_rg[50], nova_data_nasc[50];
+                        int id_cliente;
 
-                    while (getchar() != '\n'); // Limpa o buffer
+                        printf("\nDigite o ID do(a) cliente conforme a tabela acima: ");
+                        scanf("%i", &id_cliente);
 
-                    printf("Digite o novo nome do(a) cliente (ou pressione Enter para manter o atual): ");
-                    fgets(novo_nome, sizeof(novo_nome), stdin);
-                    novo_nome[strcspn(novo_nome, "\n")] = 0;
+                        while (getchar() != '\n'); // Limpa o buffer
 
-                    printf("Digite o novo CPF do(a) cliente (ou pressione Enter para manter o atual): ");
-                    fgets(novo_cpf, sizeof(novo_cpf), stdin);
-                    novo_cpf[strcspn(novo_cpf, "\n")] = 0;
+                        printf("Digite o novo nome do(a) cliente (ou pressione Enter para manter o atual): ");
+                        fgets(novo_nome, sizeof(novo_nome), stdin);
+                        novo_nome[strcspn(novo_nome, "\n")] = 0;
 
-                    printf("Digite o novo RG do(a) cliente (ou pressione Enter para manter o atual): ");
-                    fgets(novo_rg, sizeof(novo_rg), stdin);
-                    novo_rg[strcspn(novo_rg, "\n")] = 0;
+                        printf("Digite o novo CPF do(a) cliente (ou pressione Enter para manter o atual): ");
+                        fgets(novo_cpf, sizeof(novo_cpf), stdin);
+                        novo_cpf[strcspn(novo_cpf, "\n")] = 0;
 
-                    printf("Digite a nova data de nascimento do(a) cliente (ou pressione Enter para manter a atual): ");
-                    fgets(nova_data_nasc, sizeof(nova_data_nasc), stdin);
-                    nova_data_nasc[strcspn(nova_data_nasc, "\n")] = 0;
+                        printf("Digite o novo RG do(a) cliente (ou pressione Enter para manter o atual): ");
+                        fgets(novo_rg, sizeof(novo_rg), stdin);
+                        novo_rg[strcspn(novo_rg, "\n")] = 0;
 
-                    snprintf(command, sizeof(command),
-                        "python \"C:\\Users\\gtava\\OneDrive\\Documentos\\project\\output\\excel_utils.py\" editar cliente \"%i\" \"%s\" \"%s\" \"%s\" \"%s\"",
-                        id_cliente, novo_nome, novo_cpf, novo_rg, nova_data_nasc);
-                    system(command);
-                } else if (opcao == 2) {
-                    int id_cliente;
-                    char confirmacao[50];
+                        printf("Digite a nova data de nascimento do(a) cliente (ou pressione Enter para manter a atual): ");
+                        fgets(nova_data_nasc, sizeof(nova_data_nasc), stdin);
+                        nova_data_nasc[strcspn(nova_data_nasc, "\n")] = 0;
 
-                    printf("\nDigite o ID do cliente conforme a tabela acima: ");
-                    scanf("%i", &id_cliente);
+                        snprintf(command, sizeof(command),
+                            "python \"C:\\Users\\gtava\\OneDrive\\Documentos\\project\\output\\excel_utils.py\" editar cliente \"%i\" \"%s\" \"%s\" \"%s\" \"%s\"",
+                            id_cliente, novo_nome, novo_cpf, novo_rg, nova_data_nasc);
+                        system(command);
+                    } else if (opcao == 2) {
+                        int id_cliente;
+                        char confirmacao[50];
 
-                    while (getchar() != '\n'); // Limpa o buffer
+                        printf("\nDigite o ID do cliente conforme a tabela acima: ");
+                        scanf("%i", &id_cliente);
 
-                    printf("Tem certeza que deseja exclui-lo(a)? (Digite 'Sim' ou 'Nao'): ");
-                    fgets(confirmacao, sizeof(confirmacao), stdin);
-                    confirmacao[strcspn(confirmacao, "\n")] = 0;
+                        while (getchar() != '\n'); // Limpa o buffer
 
-                    while (strcmp(confirmacao, "Sim") != 0 && strcmp(confirmacao, "Nao") != 0) {
-                        printf("Opcao invalida! Digite 'Sim' ou 'Nao': ");
+                        printf("Tem certeza que deseja exclui-lo(a)? (Digite 'Sim' ou 'Nao'): ");
                         fgets(confirmacao, sizeof(confirmacao), stdin);
                         confirmacao[strcspn(confirmacao, "\n")] = 0;
-                    }
 
-                    if (strcmp(confirmacao, "Sim") == 0) {
-                        snprintf(command, sizeof(command),
-                            "python \"C:\\Users\\gtava\\OneDrive\\Documentos\\project\\output\\excel_utils.py\" excluir cliente \"%i\"",
-                            id_cliente);
-                        system(command);
-                    } else {
+                        while (strcmp(confirmacao, "Sim") != 0 && strcmp(confirmacao, "Nao") != 0) {
+                            printf("Opcao invalida! Digite 'Sim' ou 'Nao': ");
+                            fgets(confirmacao, sizeof(confirmacao), stdin);
+                            confirmacao[strcspn(confirmacao, "\n")] = 0;
+                        }
+
+                        if (strcmp(confirmacao, "Sim") == 0) {
+                            snprintf(command, sizeof(command),
+                                "python \"C:\\Users\\gtava\\OneDrive\\Documentos\\project\\output\\excel_utils.py\" excluir cliente \"%i\"",
+                                id_cliente);
+                            system(command);
+                        } else {
+                            return Busca();
+                        }
+                    } else if (opcao == 3) {
                         return Busca();
                     }
-                } else if (opcao == 3) {
-                    return Busca();
                 }
             }
+        } else {
+            printf("\nVoce nao tem permissao para acessar essa funcionalidade!\n");
+            printf("\nVoltando para o menu de busca, aguarde...");
+            sleep(2);
+            Busca();
         }
     } else if (escolha == 3) {
         char nome[50];
@@ -1175,90 +1197,98 @@ void exibirProdutos(struct Produto produtos[], int totalProdutos) {
 }
 
 /**
- * Registra as informações de uma compra em um arquivo de texto, incluindo detalhes dos produtos vendidos, o cliente, e a forma de pagamento.
- *
+ * Gera uma nota fiscal para uma compra realizada, incluindo informações sobre o cliente, o vendedor,
+ * os produtos vendidos, o total da compra e a forma de pagamento. A nota fiscal é registrada em um
+ * arquivo de texto no formato "NomeCliente(dd-mm-yyyy_hh:mm).txt".
+ * 
  * Esta função realiza as seguintes etapas:
- * 1. Obtém a data e hora atuais e as formata como uma string.
- * 2. Usa a data e hora formatadas para gerar o nome do arquivo onde a compra será registrada.
- * 3. Abre o arquivo para escrita em modo de anexação.
- * 4. Escreve os detalhes da compra no arquivo, incluindo:
- *    - Informações sobre cada produto (nome, quantidade, subtotal).
- *    - Total de itens e total da compra.
- *    - Nome do cliente.
- *    - Detalhes da forma de pagamento.
- * 5. Fecha o arquivo após a escrita.
+ * 1. Obtém a data e hora atuais para inclusão na nota fiscal.
+ * 2. Gera um nome de arquivo baseado no nome do cliente e na data/hora da compra.
+ * 3. Abre um arquivo para escrita, onde a nota fiscal será registrada.
+ * 4. Escreve informações básicas no arquivo, incluindo:
+ *    - Data e hora da compra
+ *    - Nome do cliente
+ *    - CPF do cliente, se fornecido
+ *    - Nome do funcionário responsável pela venda
+ *    - Forma de pagamento escolhida (cartão de crédito, cartão de débito, dinheiro ou PIX), 
+ *      incluindo o número de parcelas se for cartão de crédito.
+ * 5. Registra detalhes dos produtos vendidos, incluindo nome, quantidade, preço unitário e subtotal.
+ * 6. Calcula e registra o total da compra.
+ * 7. Fecha o arquivo e verifica se houve erros durante o fechamento.
  *
- * A função formata a data e hora como parte do nome do arquivo, garantindo que cada compra seja salva em um arquivo distinto. O arquivo é aberto em modo de anexação (`"a"`), mas como o nome do arquivo é único, cada execução da função resultará na criação de um novo arquivo.
- *
- * Se houver falha na abertura do arquivo, a função exibirá uma mensagem de erro usando `perror` e retornará sem salvar a compra.
+ * A função assume que os arrays `itensVendidos` e `quantidadesVendidas` têm tamanho suficiente
+ * para armazenar `numProdutos` elementos.
  */
 
-void salvarCompra(int idCompra, const char *nomeVendedor, const char *nomeCliente,
-struct Produto itensVendidos[], float quantidadesVendidas[], int numProdutos,
-float totalCompra, int tipoPagamento, int parcelas) {
-    time_t t;
-    struct tm *tm_info;
-    char data_hora[20], nome_arquivo[50];
+void gerarNotaFiscal(const char *nomeCliente, int cpf, const char *nomeFuncionario, struct Produto itensVendidos[], float quantidadesVendidas[], int numProdutos, float totalCompra, int formaPagamento, int parcelas) {
+    // Obter data e hora atuais
+    time_t t = time(NULL);
+    struct tm tm = *localtime(&t);
 
-    // Obtém o tempo atual
-    time(&t);
+    // Gerar o nome do arquivo no formato "NomeCliente(dd-mm-yyyy_hh:mm).txt"
+    char nomeArquivo[200];
+    snprintf(nomeArquivo, sizeof(nomeArquivo), "%s_%02d-%02d-%d_%02d_%02d.txt", 
+             nomeCliente, tm.tm_mday, tm.tm_mon + 1, tm.tm_year + 1900, tm.tm_hour, tm.tm_min);
 
-    // Converte o tempo para a estrutura tm
-    tm_info = localtime(&t);
-
-    // Formata a data e hora em uma única string
-    sprintf(data_hora, "%02d/%02d/%04d %02d:%02d:%02d",
-        tm_info->tm_mday,
-        tm_info->tm_mon + 1,
-        tm_info->tm_year + 1900,
-        tm_info->tm_hour,
-        tm_info->tm_min,
-        tm_info->tm_sec);
-
-    sprintf(nome_arquivo, "%s.txt", data_hora);
-
-    FILE *arquivo = fopen(nome_arquivo, "a");
-
+    // Abrir o arquivo para escrita
+    FILE *arquivo = fopen(nomeArquivo, "w");
     if (arquivo == NULL) {
-        perror("Erro ao abrir o arquivo");
+        printf("Erro ao criar o arquivo de nota fiscal.\n");
         return;
     }
 
-    fprintf(arquivo, "|=============================|\n");
-    fprintf(arquivo, "|            CAIXA            |\n");
-    fprintf(arquivo, "|-----------------------------|\n");
+    // Escrever informações básicas no arquivo
+    fprintf(arquivo, "========== NOTA FISCAL ==========\n");
+    fprintf(arquivo, "Data da compra: %02d/%02d/%d %02d:%02d\n", tm.tm_mday, tm.tm_mon + 1, tm.tm_year + 1900, tm.tm_hour, tm.tm_min);
+    fprintf(arquivo, "Nome do(a) cliente: %s\n", nomeCliente);
+    
+    if (cpf != 0) {
+        fprintf(arquivo, "CPF do(a) cliente: %d\n", cpf);
+    }
+    
+    fprintf(arquivo, "Nome do(a) funcionario(a): %s\n", nomeFuncionario);
+    fprintf(arquivo, "Forma de Pagamento: ");
+    
+    switch (formaPagamento) {
+        case 1:
+            fprintf(arquivo, "Cartão de Crédito (%d parcelas)\n", parcelas);
+            break;
+        case 2:
+            fprintf(arquivo, "Cartão de Débito\n");
+            break;
+        case 3:
+            fprintf(arquivo, "Dinheiro\n");
+            break;
+        case 4:
+            fprintf(arquivo, "PIX\n");
+            break;
+        default:
+            fprintf(arquivo, "Forma de pagamento desconhecida\n");
+    }
+    
+    fprintf(arquivo, "---------------------------------\n");
 
+    // Escrever informações dos produtos
     for (int i = 0; i < numProdutos; i++) {
-        fprintf(arquivo, "| Produto: %-15s |\n", itensVendidos[i].nome);
-        fprintf(arquivo, "| Quantidade: %.2f kg |\n", quantidadesVendidas[i]);
-        fprintf(arquivo, "| Subtotal: R$ %.2f |\n", itensVendidos[i].precoPorKg * quantidadesVendidas[i]);
-        fprintf(arquivo, "|-----------------------------|\n");
+        if (itensVendidos[i].nome != NULL && quantidadesVendidas[i] > 0) {
+            fprintf(arquivo, "Produto: %s\n", itensVendidos[i].nome);
+            fprintf(arquivo, "Quantidade: %.2f kg\n", quantidadesVendidas[i]);
+            fprintf(arquivo, "Preço unitário: R$ %.2f\n", itensVendidos[i].precoPorKg);
+            fprintf(arquivo, "Subtotal: R$ %.2f\n", itensVendidos[i].precoPorKg * quantidadesVendidas[i]);
+            fprintf(arquivo, "---------------------------------\n");
+        }
     }
 
-    fprintf(arquivo, "| Total de itens: %d |\n", numProdutos);
-    fprintf(arquivo, "| Total da compra: R$ %.2f |\n", totalCompra);
-    fprintf(arquivo, "|=============================|\n");
+    // Escrever total da compra
+    fprintf(arquivo, "TOTAL DA COMPRA: R$ %.2f\n", totalCompra);
+    fprintf(arquivo, "=================================\n");
 
-    fprintf(arquivo, "Nome do(a) cliente: %s\n\n", nomeCliente);
-
-    fprintf(arquivo, "PRODUTOS:\n");
-    for (int i = 0; i < numProdutos; i++) {
-        fprintf(arquivo, "ID: %-4d Nome: %-20s R$ %-5.2f Tipo de Venda: %-10s\n",
-                itensVendidos[i].id,
-                itensVendidos[i].nome,
-                itensVendidos[i].precoPorKg,
-                itensVendidos[i].tipoVenda);
+    // Fechar o arquivo e verificar erros
+    if (fclose(arquivo) == EOF) {
+        printf("Erro ao fechar o arquivo.\n");
+    } else {
+        printf("\nNota fiscal gerada com sucesso: %s\n", nomeArquivo);
     }
-
-    fprintf(arquivo, "\nDigite o ID do produto conforme a tabela acima(ou 0 para finalizar a compra): 0\n");
-    fprintf(arquivo, "\nPagamento:\n");
-    fprintf(arquivo, "Deseja CPF na nota? (Digite 'Sim' ou 'Nao'): %s\n", tipoPagamento == 1 ? "Sim" : "Nao");
-    fprintf(arquivo, "CPF do(a) cliente: %d\n", tipoPagamento); // Simplificado para exemplo
-
-    fprintf(arquivo, "Escolha uma das formas de pagamento acima: %d\n", tipoPagamento);
-    fprintf(arquivo, "O pagamento foi realizado com sucesso? (Responda com 'Sim' ou 'Nao'): %s\n", tipoPagamento == 1 ? "Sim" : "Nao");
-
-    fclose(arquivo);
 }
 
 /**
@@ -1279,11 +1309,11 @@ float totalCompra, int tipoPagamento, int parcelas) {
  * Também assume que a função `Caixa()` existe e é responsável por retornar ao menu principal ou encerrar a operação.
  */
 
-void Pagamento(int cpf, int idCompra, const char *nomeVendedor, struct Produto itensVendidos[], 
-    float quantidadesVendidas[], int numProdutos, float totalCompra) {
+void Pagamento(const char* nome, int cpf, int idCompra, const char *nomeVendedor, struct Produto itensVendidos[], float quantidadesVendidas[], int numProdutos, float totalCompra) {
+    
     int opcaoPag, qtdParcela;
     char opcaoCPF[50], opcaoParcela[50], confirmacao[50];
-    int parcelas = 1, CPFcliente; // Default para pagamentos não parcelados
+    int CPFcliente = cpf; // Inicializa com o CPF passado
 
     while (getchar() != '\n');
 
@@ -1299,68 +1329,50 @@ void Pagamento(int cpf, int idCompra, const char *nomeVendedor, struct Produto i
 
     if (strcmp(opcaoCPF, "Sim") == 0) {
         if (cpf != 0) {
-            printf("CPF do(a) cliente: %d", cpf);
-        }else{
+            printf("CPF do(a) cliente: %d\n", cpf);
+        } else {
             printf("Digite o CPF usando apenas numeros: ");
             scanf("%i", &CPFcliente);
+            printf("CPF do(a) cliente: %d\n", CPFcliente);
         }
-        
-        printf("\n1 - Cartao de credito \n");
-        printf("2 - Cartao de debito \n");
-        printf("3 - Dinheiro \n");
-        printf("4 - PIX\n\n");
-        printf("Escolha uma das formas de pagamento acima: ");
+    }
+
+    printf("\n1 - Cartao de credito\n2 - Cartao de debito\n3 - Dinheiro\n4 - PIX\n\n");
+    printf("Escolha uma das formas de pagamento acima: ");
+    scanf("%i", &opcaoPag);
+
+    while (opcaoPag < 1 || opcaoPag > 4) {
+        printf("Opcao invalida! Digite uma opcao valida: ");
         scanf("%i", &opcaoPag);
+    }
 
-        while (opcaoPag < 1 || opcaoPag > 4) {
-            printf("Opcao invalida! Digite uma opcao valida: ");
-            scanf("%i", &opcaoPag);
-        }
+    while (getchar() != '\n');
 
-        while (getchar() != '\n');
+    if (opcaoPag == 1) {
+        printf("Deseja parcelar em ate 3x sem juros? (Responda com 'Sim' ou 'Nao'): ");
+        fgets(opcaoParcela, sizeof(opcaoParcela), stdin);
+        opcaoParcela[strcspn(opcaoParcela, "\n")] = 0;
 
-        if (opcaoPag == 1) {
-            printf("Deseja parcelar em ate 3x sem juros? (Responda com 'Sim' ou 'Nao'): ");
+        while (strcmp(opcaoParcela, "Sim") != 0 && strcmp(opcaoParcela, "Nao") != 0) {
+            printf("Opcao invalida! Digite 'Sim' ou 'Nao': ");
             fgets(opcaoParcela, sizeof(opcaoParcela), stdin);
             opcaoParcela[strcspn(opcaoParcela, "\n")] = 0;
+        }
 
-            while (strcmp(opcaoParcela, "Sim") != 0 && strcmp(opcaoParcela, "Nao") != 0) {
-                printf("Opcao invalida! Digite 'Sim' ou 'Nao': ");
-                fgets(opcaoParcela, sizeof(opcaoParcela), stdin);
-                opcaoParcela[strcspn(opcaoParcela, "\n")] = 0;
-            }
+        if (strcmp(opcaoParcela, "Sim") == 0) {
+            printf("Quer parcelar em quantas vezes? (ate 3x sem juros): ");
+            scanf("%i", &qtdParcela);
 
-            if (strcmp(opcaoParcela, "Sim") == 0) {
-                printf("Quer parcelar em quantas vezes? (ate 3x sem juros): ");
+            while (qtdParcela < 2 || qtdParcela > 3) {
+                printf("Opcao invalida! Digite um numero de parcelas valido (2 ou 3): ");
                 scanf("%i", &qtdParcela);
-
-                while (qtdParcela < 2 || qtdParcela > 3) {
-                    printf("Opcao invalida! Digite um numero de parcelas valido (2 ou 3): ");
-                    scanf("%i", &qtdParcela);
-                }
-            } else {
-                qtdParcela = 1;
             }
         } else {
             qtdParcela = 1;
         }
     } else {
-        printf("\n1 - Cartao de credito \n");
-        printf("2 - Cartao de debito \n");
-        printf("3 - Dinheiro \n");
-        printf("4 - PIX\n\n");
-        printf("Escolha uma das formas de pagamento acima: ");
-        scanf("%i", &opcaoPag);
-
-        while (opcaoPag < 1 || opcaoPag > 4) {
-            printf("Opcao invalida! Digite uma opcao valida: ");
-            scanf("%i", &opcaoPag);
-        }
-
         qtdParcela = 1;
     }
-
-    while (getchar() != '\n');
 
     printf("O pagamento foi realizado com sucesso? (Responda com 'Sim' ou 'Nao'): ");
     fgets(confirmacao, sizeof(confirmacao), stdin);
@@ -1373,10 +1385,12 @@ void Pagamento(int cpf, int idCompra, const char *nomeVendedor, struct Produto i
     }
 
     if (strcmp(confirmacao, "Sim") == 0) {
-        salvarCompra(idCompra, nomeVendedor, "Cliente", itensVendidos, quantidadesVendidas, 3, totalCompra, opcaoPag, qtdParcela);
+        // Chamar a função para gerar a nota fiscal com informações de pagamento
+        gerarNotaFiscal(nome, CPFcliente, nomeVendedor, itensVendidos, quantidadesVendidas, numProdutos, totalCompra, opcaoPag, qtdParcela);
     } else {
         printf("Pagamento não realizado.\n");
     }
+
     printf("Finalizando a operacao...\n");
     sleep(3);
     Caixa();
@@ -1450,6 +1464,8 @@ void caixaTerminal(struct Produto produtos[], int totalProdutos, int cpf, char n
             printf("Nome do(a) cliente: %s\n", nome);
             printf("(Esta compra esta tendo um desconto de 10 por centro no valor total)\n");
         }
+        
+        printf("Nome do(a) funcionario(a): %s\n", user_name);
 
         exibirProdutos(produtos, totalProdutos);
 
@@ -1484,7 +1500,7 @@ void caixaTerminal(struct Produto produtos[], int totalProdutos, int cpf, char n
     }
 
     printf("\nPagamento:\n");
-    Pagamento(cpf, id, nome, itensVendidos, quantidadesVendidas, numProdutos, totalCompra);
+    Pagamento(nome, cpf, id, user_name, itensVendidos, quantidadesVendidas, numProdutos, totalCompra);
 }
 
 typedef struct {
