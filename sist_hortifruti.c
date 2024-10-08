@@ -87,16 +87,6 @@ int Login() {
     return login_sucesso;
 }
 
-// Função para validar se uma string é numérica
-int eh_numerico(const char *str) {
-    for (int i = 0; str[i]; i++) {
-        if (!isdigit((unsigned char)str[i])) {
-            return 0; // Não é numérico
-        }
-    }
-    return 1; // É numérico
-}
-
 /**
  * Função de cadastro para diferentes tipos de entidades (Funcionário, Cliente, Produto) e opções de controle do sistema.
  *
@@ -221,11 +211,11 @@ int Cadastro() {
             // CPF
             while (1) {
                 printf("Digite o CPF do(a) funcionario(a) com apenas numeros: ");
-                if (eh_numerico(cpf_funcionario)) {
-                    sscanf(cpf_funcionario, "%d", &cpf_funcionario);
-                    break; // Se o CPF for válido, sai do loop
-                } else {
+                if (scanf("%i", &cpf_funcionario) != 1) {
                     printf("Entrada invalida. Tente novamente.\n");
+                    while (getchar() != '\n'); // Limpar o buffer
+                } else {
+                    break;  // Se o CPF for válido, sai do loop
                 }
             }
             getchar(); // Limpar o buffer
@@ -468,7 +458,7 @@ int Cadastro() {
 
         // Solicita o preco do produto
         while (1) {
-            printf("Digite o preco por unidade do produto por %s: ", &tipo_venda);
+            printf("Digite o preco do produto por %s: ", &tipo_venda);
             if (scanf("%f", &preco) == 1) {
                 break;  // Se a entrada for valida, sai do loop
             } else {
@@ -484,8 +474,11 @@ int Cadastro() {
         snprintf(command, sizeof(command),
             "python \"C:\\Users\\gtava\\OneDrive\\Documentos\\project\\output\\excel_utils.py\" \"%s\" \"%d\" \"%f\" \"%s\"",
             nome_produto, qtd_produto, preco, tipo_venda);
-        
-        system(command);
+
+        int ret = system(command);
+        if (ret != 0) {
+            printf("Não foi possível cadastrar o produto. Tente novamente com um nome diferente.\n");
+        }
     } else if (escolha == 4){
         menu();
     } else if (escolha == 9){
@@ -1220,7 +1213,7 @@ void exibirProdutos(struct Produto produtos[], int totalProdutos) {
  * para armazenar `numProdutos` elementos.
  */
 
-void gerarNotaFiscal(const char *nomeCliente, int cpf, const char *nomeFuncionario, struct Produto itensVendidos[], float quantidadesVendidas[], int numProdutos, float totalCompra, int formaPagamento, int parcelas) {
+void gerarNotaFiscal(const char *nomeCliente, const char *cpf, const char *nomeFuncionario, struct Produto itensVendidos[], float quantidadesVendidas[], int numProdutos, float totalCompra, int formaPagamento, int parcelas) {
     // Obter data e hora atuais
     time_t t = time(NULL);
     struct tm tm = *localtime(&t);
@@ -1241,11 +1234,7 @@ void gerarNotaFiscal(const char *nomeCliente, int cpf, const char *nomeFuncionar
     fprintf(arquivo, "========== NOTA FISCAL ==========\n");
     fprintf(arquivo, "Data da compra: %02d/%02d/%d %02d:%02d\n", tm.tm_mday, tm.tm_mon + 1, tm.tm_year + 1900, tm.tm_hour, tm.tm_min);
     fprintf(arquivo, "Nome do(a) cliente: %s\n", nomeCliente);
-    
-    if (cpf != 0) {
-        fprintf(arquivo, "CPF do(a) cliente: %d\n", cpf);
-    }
-    
+    fprintf(arquivo, "CPF do(a) cliente: %s\n", cpf);
     fprintf(arquivo, "Nome do(a) funcionario(a): %s\n", nomeFuncionario);
     fprintf(arquivo, "Forma de Pagamento: ");
     
@@ -1309,11 +1298,12 @@ void gerarNotaFiscal(const char *nomeCliente, int cpf, const char *nomeFuncionar
  * Também assume que a função `Caixa()` existe e é responsável por retornar ao menu principal ou encerrar a operação.
  */
 
-void Pagamento(const char* nome, int cpf, int idCompra, const char *nomeVendedor, struct Produto itensVendidos[], float quantidadesVendidas[], int numProdutos, float totalCompra) {
+void Pagamento(const char* nome, const char* cpf, int idCompra, const char *nomeVendedor, struct Produto itensVendidos[], float quantidadesVendidas[], int numProdutos, float totalCompra) {
     
     int opcaoPag, qtdParcela;
-    char opcaoCPF[50], opcaoParcela[50], confirmacao[50];
-    int CPFcliente = cpf; // Inicializa com o CPF passado
+    char opcaoCPF[50], opcaoParcela[50], confirmacao[50], CPFcliente[12]; // Inicializa com o CPF passado
+
+    strcpy(CPFcliente, cpf);
 
     while (getchar() != '\n');
 
@@ -1329,11 +1319,12 @@ void Pagamento(const char* nome, int cpf, int idCompra, const char *nomeVendedor
 
     if (strcmp(opcaoCPF, "Sim") == 0) {
         if (cpf != 0) {
-            printf("CPF do(a) cliente: %d\n", cpf);
+            printf("CPF do(a) cliente: %s\n", cpf);
         } else {
             printf("Digite o CPF usando apenas numeros: ");
-            scanf("%i", &CPFcliente);
-            printf("CPF do(a) cliente: %d\n", CPFcliente);
+            fgets(CPFcliente, sizeof(CPFcliente), stdin);
+            CPFcliente[strcspn(CPFcliente, "\n")] = 0;
+            printf("CPF do(a) cliente: %s\n", CPFcliente);
         }
     }
 
@@ -1373,7 +1364,9 @@ void Pagamento(const char* nome, int cpf, int idCompra, const char *nomeVendedor
     } else {
         qtdParcela = 1;
     }
-
+    
+    while (getchar() != '\n');
+    
     printf("O pagamento foi realizado com sucesso? (Responda com 'Sim' ou 'Nao'): ");
     fgets(confirmacao, sizeof(confirmacao), stdin);
     confirmacao[strcspn(confirmacao, "\n")] = 0;
@@ -1387,6 +1380,19 @@ void Pagamento(const char* nome, int cpf, int idCompra, const char *nomeVendedor
     if (strcmp(confirmacao, "Sim") == 0) {
         // Chamar a função para gerar a nota fiscal com informações de pagamento
         gerarNotaFiscal(nome, CPFcliente, nomeVendedor, itensVendidos, quantidadesVendidas, numProdutos, totalCompra, opcaoPag, qtdParcela);
+        
+        // Atualizar estoque
+        for (int i = 0; i < numProdutos; i++) {
+            if (quantidadesVendidas[i] > 0) {
+                char command[512];
+                snprintf(command, sizeof(command),
+                    "python \"C:\\Users\\gtava\\OneDrive\\Documentos\\project\\output\\excel_utils.py\" \"atualizar_estoque\" \"%s\" %d",
+                    itensVendidos[i].nome, quantidadesVendidas[i]); // Passando o nome do produto e a quantidade vendida
+                
+                // Executa o comando Python para atualizar o estoque
+                system(command);
+            }
+        }
     } else {
         printf("Pagamento não realizado.\n");
     }
@@ -1421,6 +1427,9 @@ void caixaTerminal(struct Produto produtos[], int totalProdutos, int cpf, char n
     int numProdutos = 0;
     struct Produto itensVendidos[100];
     float quantidadesVendidas[100];
+    char novoCPF[50];
+
+    snprintf(novoCPF, sizeof(novoCPF), "%d", cpf);
 
     while (1) {
         limparTela();
@@ -1479,7 +1488,7 @@ void caixaTerminal(struct Produto produtos[], int totalProdutos, int cpf, char n
         struct Produto produtoSelecionado = buscarProduto(produtos, totalProdutos, idProduto);
 
         if (produtoSelecionado.id != 0) {
-            printf("Digite a quantidade desejada em KG: ");
+            printf("Digite a quantidade desejada de acordo com o tipo de venda(100g ou unidade): ");
             scanf("%f", &quantidade);
 
             if (quantidade > 0) {
@@ -1500,13 +1509,13 @@ void caixaTerminal(struct Produto produtos[], int totalProdutos, int cpf, char n
     }
 
     printf("\nPagamento:\n");
-    Pagamento(nome, cpf, id, user_name, itensVendidos, quantidadesVendidas, numProdutos, totalCompra);
+    Pagamento(nome, novoCPF, id, user_name, itensVendidos, quantidadesVendidas, numProdutos, totalCompra);
 }
 
 typedef struct {
     int id;
     char nome[100];
-    int cpf;
+    char cpf[12];
 } Cliente;
 
 /**
@@ -1547,7 +1556,7 @@ int Caixa() {
     printf("| 3 - Cancelar operacao        |\n");
     printf("| 9 - Encerrar o sistema       |\n");
     printf("|==============================|\n");
-    printf("Digite a opcao desejada: ");
+    printf("\nDigite a opcao desejada: ");
 
     while (1) {
         if (scanf("%d", &escolha) != 1) {
@@ -1594,8 +1603,8 @@ int Caixa() {
             scanf("%i", &id_cliente);
 
             snprintf(command, sizeof(command),
-                "python \"C:\\Users\\gtava\\OneDrive\\Documentos\\project\\output\\excel_utils.py\" buscar cliente \"%i\"", id_cliente);
-            
+                    "python \"C:\\Users\\gtava\\OneDrive\\Documentos\\project\\output\\excel_utils.py\" buscar cliente \"%i\"", id_cliente);
+
             fp = popen(command, "r");
             if (fp == NULL) {
                 printf("Erro ao executar comando.\n");
@@ -1603,12 +1612,21 @@ int Caixa() {
             }
 
             Cliente cliente;
+            char nome_completo[100];  // Buffer temporário para armazenar o nome completo
+
             while (fgets(output, sizeof(output), fp) != NULL) {
-                if (sscanf(output, "%d %s %d", &cliente.id, cliente.nome, &cliente.cpf) == 3) {
-                    // Sucesso ao capturar os dados
-                    caixaTerminal(produtos, totalProdutos, cliente.cpf, cliente.nome, cliente.id);
-                }
-            } 
+                // Captura o ID, o nome completo e o CPF
+                // %d para o ID, %[^0-9] para capturar o nome até que encontre um número (início do CPF), %s para o CPF
+                sscanf(output, "%d %99[^0-9] %s", &cliente.id, nome_completo, cliente.cpf);
+
+                // Copia o nome completo para o campo 'nome' da estrutura Cliente, removendo espaços extras
+                strncpy(cliente.nome, nome_completo, sizeof(cliente.nome) - 1);
+                cliente.nome[sizeof(cliente.nome) - 1] = '\0';  // Certifica-se de que a string seja terminada corretamente
+
+                // Chama a função com CPF como string
+                caixaTerminal(produtos, totalProdutos, cliente.cpf, cliente.nome, cliente.id);
+            }
+
         }
         case 2:
             // Continuar com ou sem cliente

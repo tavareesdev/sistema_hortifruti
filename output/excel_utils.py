@@ -219,10 +219,15 @@ def cadastrar_produto(nome, preco, qtd_produto, tipo_produto):
     # Lê os dados atuais das planilhas
     df_produto = ler_dados_planilha('Produtos')
 
-    # Gera um novo ID único
-    novo_id = gerar_id_unico(df_produto)
-
     if df_produto is not None:
+        # Verificar se já existe um produto com o mesmo nome
+        if nome in df_produto['Nome'].values:
+            print(f"Erro: Já existe um produto cadastrado com o nome '{nome}'. Tente novamente com outro nome.")
+            return  # Interrompe a execução da função
+
+        # Gera um novo ID único
+        novo_id = gerar_id_unico(df_produto)
+
         try:
             # Converte o preço para float e arredonda para duas casas decimais
             preco_float = float(preco)  # Converte para float
@@ -264,6 +269,7 @@ Comportamento:
 - Exibe uma mensagem de sucesso se as credenciais forem corretas, ou uma mensagem de erro se forem incorretas.
 - Se houver um erro ao ler a planilha, exibe uma mensagem de erro e retorna False.
 """
+
 def validar_login(username, password):
     df_users = ler_dados_planilha('Users')
     if df_users is not None:
@@ -569,27 +575,30 @@ Comportamento:
 - Se `nome` for 'Todos':
     - Retorna todos os clientes na planilha.
 """
+
 def buscar_cliente(nome):
     df = ler_dados_planilha('Clientes')
 
     if nome != 'Todos':
-        if not isinstance(nome, str):
-            print("O nome do(a) cliente deve ser uma string.")
-            return
-        resultado = df[df['Nome'].str.contains(nome.strip(), case=False, na=False)]
+        try:
+            numero = int(nome)
+            resultado = df[df['ID'].str.contains(nome.strip(), case=False, na=False)]
+            if not resultado.empty:
+                # Retorna apenas ID, Nome e CPF
+                for _, row in resultado.iterrows():
+                    print(f"{row['ID']} {row['Nome']} {row['CPF']}")
+                return  # Retorna para evitar impressão do formato padrão
+        except ValueError:
+            resultado = df[df['Nome'].str.contains(nome.strip(), case=False, na=False)]
+
     else:
         resultado = df
 
     if not resultado.empty:
-        resultado = resultado.to_string(index=False)
-        print("\n" + resultado + "\n")
+        # Imprime o DataFrame no formato esperado
+        print("\n" + resultado.to_string(index=False, header=True))
     else:
-        resultado = df[df['ID'].str.contains(nome.strip(), case=False, na=False)]
-        if not resultado.empty:
-            resultado = resultado.to_string(index=False)
-            print("\n" + resultado + "\n")
-        else:
-            print("Nenhum cliente encontrado.")
+        print("Nenhum cliente encontrado.")
 
 """
 Atualiza as informações de um cliente na planilha 'Clientes'.
@@ -741,6 +750,42 @@ def processar_arquivo_venda(nome_arquivo):
 
     df.to_excel(planilha_caminho, index=False, engine='openpyxl')
 
+def atualizar_estoque(nome_produto, quantidade_vendida):
+    # Carregar a planilha existente
+    wb = openpyxl.load_workbook(planilha_caminho)  # Substitua pelo caminho da sua planilha
+    ws = wb['Produtos']  # Ou use ws = wb['Nome_da_Sua_Planilha'] para uma planilha específica
+
+    # Iterar pelas linhas da planilha para encontrar o produto
+    for linha in ws.iter_rows(min_row=2):  # Supondo que a primeira linha contém os cabeçalhos
+        if linha[1].value == nome_produto:  # Supondo que o nome do produto está na coluna B
+            # Obter a quantidade atual
+            quantidade_atual = linha[2].value
+            
+            # Verifique se a quantidade atual não é None
+            if quantidade_atual is not None:
+                # Tente converter a quantidade atual para inteiro
+                try:
+                    quantidade_atual = int(quantidade_atual)
+                except ValueError:
+                    return
+                
+                # Verificar se a quantidade vendida é um número
+                if isinstance(quantidade_vendida, int):
+                    # Subtrair a quantidade vendida
+                    nova_quantidade = quantidade_atual - quantidade_vendida
+                    
+                    # Verifique se a nova quantidade não fica negativa
+                    if nova_quantidade < 0:
+                        return
+                    
+                    # Salvar a nova quantidade como texto
+                    linha[2].value = str(nova_quantidade)  # Convertendo para string
+
+            break
+
+    # Salvar as alterações na planilha
+    wb.save(planilha_caminho)  # Salve a planilha
+
 """
 Executa funções baseadas nos argumentos passados pela linha de comando.
 
@@ -770,6 +815,14 @@ if __name__ == "__main__":
     elif "buscar" in sys.argv and "cliente" in sys.argv:
         cliente = sys.argv[3]
         buscar_cliente(cliente)
+    elif "atualizar_estoque" in sys.argv:
+        nome_produto = sys.argv[2]
+        quantidade_vendida = sys.argv[3]
+        try:
+            quantidade_vendida = int(quantidade_vendida)  # Converte para float
+        except ValueError:
+            print(f"A quantidade vendida '{quantidade_vendida}' não é um número válido.")
+        atualizar_estoque(nome_produto, quantidade_vendida)
     elif "editar" in sys.argv and "funcionario" in sys.argv:
         novo_nome = sys.argv[4]
         novo_cpf = sys.argv[5]

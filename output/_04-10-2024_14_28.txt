@@ -1,0 +1,14 @@
+========== NOTA FISCAL ==========
+Data da compra: 04/10/2024 14:28
+Nome do(a) cliente: 
+CPF do(a) cliente: 0
+Nome do(a) funcionario(a): Gabriel Tavares
+Forma de Pagamento: PIX
+---------------------------------
+Produto: Caju
+Quantidade: 8.00 kg
+Preço unitário: R$ 2.39
+Subtotal: R$ 19.12
+---------------------------------
+TOTAL DA COMPRA: R$ 19.12
+=================================

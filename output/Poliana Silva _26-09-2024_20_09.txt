@@ -1,0 +1,14 @@
+========== NOTA FISCAL ==========
+Data da compra: 26/09/2024 20:09
+Nome do(a) cliente: Poliana Silva 
+CPF do(a) cliente: b
+Nome do(a) funcionario(a): Gabriel Tavares
+Forma de Pagamento: PIX
+---------------------------------
+Produto: Melancia
+Quantidade: 2.00 kg
+Preço unitário: R$ 5.00
+Subtotal: R$ 10.00
+---------------------------------
+TOTAL DA COMPRA: R$ 9.00
+=================================
