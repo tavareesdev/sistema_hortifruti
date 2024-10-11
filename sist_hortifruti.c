@@ -410,8 +410,7 @@ int Cadastro() {
         }
     } else if (escolha == 3) {
         char nome_produto[50], tipo_venda[50];
-        int qtd_produto;
-        float preco;
+        float preco, qtd_produto;
 
         while (1) {
             printf("\nDigite o nome do novo produto sem o uso de caracteres especiais (ou 'exit' para voltar): ");
@@ -431,12 +430,7 @@ int Cadastro() {
         // Solicita a quantidade do produto
         while (1) {
             printf("Digite a quantidade do produto com apenas numeros: ");
-            if (scanf("%d", &qtd_produto) == 1) {
-                break;  // Se a entrada for valida, sai do loop
-            } else {
-                printf("Entrada invalida. Digite apenas numeros.\n");
-                while (getchar() != '\n');  // Limpa o buffer de entrada
-            }
+            scanf("%f", &qtd_produto);
         }
 
         getchar(); // Limpar o buffer de entrada
@@ -472,7 +466,7 @@ int Cadastro() {
         // Chamar a função Python para cadastrar o cliionário
         char command[512];
         snprintf(command, sizeof(command),
-            "python \"C:\\Users\\gtava\\OneDrive\\Documentos\\project\\output\\excel_utils.py\" \"%s\" \"%d\" \"%f\" \"%s\"",
+            "python \"C:\\Users\\gtava\\OneDrive\\Documentos\\project\\output\\excel_utils.py\" \"%s\" \"%f\" \"%f\" \"%s\"",
             nome_produto, qtd_produto, preco, tipo_venda);
 
         int ret = system(command);
@@ -827,7 +821,8 @@ int Busca() {
 
                 if (opcao == 1) {
                     char novo_nome[50], novo_preco[50], novo_tipo[50];
-                    int id_produto, nova_quantidade;
+                    int id_produto;
+                    float nova_quantidade;
 
                     printf("\nDigite o ID do produto conforme a tabela acima: ");
                     scanf("%i", &id_produto);
@@ -843,7 +838,7 @@ int Busca() {
                     novo_preco[strcspn(novo_preco, "\n")] = 0;
 
                     printf("Digite a nova quantidade do produto (ou pressione Enter para manter a atual): ");
-                    scanf("%i", &nova_quantidade);
+                    scanf("%f", &nova_quantidade);
 
                     while (1) {
                         printf("Digite o novo tipo do produto (Granel ou Peso): ");
@@ -860,7 +855,7 @@ int Busca() {
                     }
 
                     snprintf(command, sizeof(command),
-                        "python \"C:\\Users\\gtava\\OneDrive\\Documentos\\project\\output\\excel_utils.py\" \"%i\" \"%s\" \"%s\" \"%i\" \"%s\" editar produto\"",
+                        "python \"C:\\Users\\gtava\\OneDrive\\Documentos\\project\\output\\excel_utils.py\" \"%i\" \"%s\" \"%s\" \"%f\" \"%s\" editar produto\"",
                         id_produto, novo_nome, novo_preco, nova_quantidade, novo_tipo);
                     system(command);
                 } else if (opcao == 2) {
@@ -1033,7 +1028,7 @@ int Pesagem() {
 struct Produto {
     int id;
     char nome[MAX_NOME];
-    int quantidade;  // Adicionada a quantidade
+    float quantidade;  // Adicionada a quantidade
     float precoPorKg;
     char tipoVenda[MAX_NOME]; // Adicionado tipo de venda
 };
@@ -1070,26 +1065,22 @@ struct Produto {
 void processar_saida_python(const char *saida, struct Produto produtos[], int *totalProdutos) {
     *totalProdutos = 0;
 
-    // Use um buffer para armazenar cada linha
     char linha[256];
     char *linha_ptr = strtok((char *)saida, "\n");
 
     while (linha_ptr != NULL && *totalProdutos < MAX_PRODUTOS) {
         int id;
         char nome[MAX_NOME];
-        int quantidade;
+        float quantidade;  // Alterado para float
         float preco;
         char tipoVenda[MAX_NOME];
 
-        // Ajuste o sscanf para capturar todos os campos
-        int camposLidos = sscanf(linha_ptr, "%d %49s %d %f %49s", &id, nome, &quantidade, &preco, tipoVenda);
+        int camposLidos = sscanf(linha_ptr, "%d %49s %f %f %49s", &id, nome, &quantidade, &preco, tipoVenda);
 
-        // Verifica se a quantidade de campos lidos é correta
-        if (camposLidos >= 4) {
+        if (camposLidos >= 5) {
             produtos[*totalProdutos].id = id;
             strncpy(produtos[*totalProdutos].nome, nome, MAX_NOME);
-            // Usamos o nome como quantidade e preço, para depois ajustar
-            produtos[*totalProdutos].quantidade = quantidade; // Adicionamos quantidade
+            produtos[*totalProdutos].quantidade = quantidade;
             produtos[*totalProdutos].precoPorKg = preco;
             strncpy(produtos[*totalProdutos].tipoVenda, tipoVenda, MAX_NOME);
             (*totalProdutos)++;
@@ -1166,15 +1157,13 @@ void preencherEspacos(int textoLength) {
 }
 
 // Função para buscar um produto pelo ID
-struct Produto buscarProduto(struct Produto produtos[], int totalProdutos, int id) {
+struct Produto* buscarProduto(struct Produto produtos[], int totalProdutos, int id) {
     for (int i = 0; i < totalProdutos; i++) {
         if (produtos[i].id == id) {
-            return produtos[i];
+            return &produtos[i];  // Retorna o endereço do produto
         }
     }
-    // Retorna um produto vazio caso não encontre o ID
-    struct Produto vazio = {0, "", 0.0};
-    return vazio;
+    return NULL;  // Retorna NULL se não encontrar
 }
 
 // Função para exibir todos os produtos carregados
@@ -1365,8 +1354,6 @@ void Pagamento(const char* nome, const char* cpf, int idCompra, const char *nome
         qtdParcela = 1;
     }
     
-    while (getchar() != '\n');
-    
     printf("O pagamento foi realizado com sucesso? (Responda com 'Sim' ou 'Nao'): ");
     fgets(confirmacao, sizeof(confirmacao), stdin);
     confirmacao[strcspn(confirmacao, "\n")] = 0;
@@ -1378,23 +1365,22 @@ void Pagamento(const char* nome, const char* cpf, int idCompra, const char *nome
     }
 
     if (strcmp(confirmacao, "Sim") == 0) {
-        // Chamar a função para gerar a nota fiscal com informações de pagamento
         gerarNotaFiscal(nome, CPFcliente, nomeVendedor, itensVendidos, quantidadesVendidas, numProdutos, totalCompra, opcaoPag, qtdParcela);
-        
+
         // Atualizar estoque
         for (int i = 0; i < numProdutos; i++) {
             if (quantidadesVendidas[i] > 0) {
                 char command[512];
                 snprintf(command, sizeof(command),
-                    "python \"C:\\Users\\gtava\\OneDrive\\Documentos\\project\\output\\excel_utils.py\" \"atualizar_estoque\" \"%s\" %d",
-                    itensVendidos[i].nome, quantidadesVendidas[i]); // Passando o nome do produto e a quantidade vendida
-                
+                    "python \"C:\\Users\\gtava\\OneDrive\\Documentos\\project\\output\\excel_utils.py\" \"atualizar_estoque\" \"%s\" %.2f",
+                    itensVendidos[i].nome, quantidadesVendidas[i]);  // Passando a quantidade como float
+
                 // Executa o comando Python para atualizar o estoque
                 system(command);
             }
         }
     } else {
-        printf("Pagamento não realizado.\n");
+        printf("Pagamento nao realizado.\n");
     }
 
     printf("Finalizando a operacao...\n");
@@ -1485,26 +1471,34 @@ void caixaTerminal(struct Produto produtos[], int totalProdutos, int cpf, char n
             break;
         }
 
-        struct Produto produtoSelecionado = buscarProduto(produtos, totalProdutos, idProduto);
+        struct Produto* produtoSelecionado = buscarProduto(produtos, totalProdutos, idProduto);
 
-        if (produtoSelecionado.id != 0) {
-            printf("Digite a quantidade desejada de acordo com o tipo de venda(100g ou unidade): ");
+        if (produtoSelecionado != NULL) {
+            printf("Digite a quantidade desejada de acordo com o tipo de venda (100g ou unidade): ");
             scanf("%f", &quantidade);
 
-            if (quantidade > 0) {
-                totalCompra += produtoSelecionado.precoPorKg * quantidade;
+            if (quantidade > produtoSelecionado->quantidade) {
+                printf("Quantidade selecionada e maior do que a disponivel (%.2f). Por favor, escolha uma quantidade menor ou igual a %.2f.\n", produtoSelecionado->quantidade, produtoSelecionado->quantidade);
+                sleep(2);
+            } else if (quantidade > 0) {
+                totalCompra += produtoSelecionado->precoPorKg * quantidade;
                 if (strcmp(nome, "") != 0) {
                     desconto = totalCompra * 0.10;
                     totalCompra = totalCompra - desconto;
                 }
-                itensVendidos[numProdutos] = produtoSelecionado;
+                itensVendidos[numProdutos] = *produtoSelecionado;
                 quantidadesVendidas[numProdutos] = quantidade;
                 numProdutos++;
+
+                // Atualiza a quantidade disponível no estoque
+                produtoSelecionado->quantidade -= quantidade;
             } else {
-                printf("Quantidade inválida.\n");
+                printf("Quantidade invalida.\n");
+                sleep(2);
             }
         } else {
-            printf("Produto não encontrado.\n");
+            printf("Produto nao encontrado.\n");
+            sleep(2);
         }
     }
 
@@ -1631,7 +1625,6 @@ int Caixa() {
         case 2:
             // Continuar com ou sem cliente
             caixaTerminal(produtos, totalProdutos, cpf, nome, id);
-            break;
         case 3:
             // Cancelar operação
             printf("Operacao cancelada.\n");

@@ -355,7 +355,7 @@ def editar_produto(novo_nome, novo_preco, nova_quantidade, novo_tipo, id_produto
             if novo_preco:
                 df_produto.at[produto_idx[0], 'Preco'] = round(float(novo_preco), 2)
             if nova_quantidade:
-                df_produto.at[produto_idx[0], 'Quantidade'] = int(nova_quantidade)
+                df_produto.at[produto_idx[0], 'Quantidade'] = float(nova_quantidade)
             if novo_tipo:
                 df_produto.at[produto_idx[0], 'Tipo de Venda'] = novo_tipo
 
@@ -765,21 +765,20 @@ def atualizar_estoque(nome_produto, quantidade_vendida):
             if quantidade_atual is not None:
                 # Tente converter a quantidade atual para inteiro
                 try:
-                    quantidade_atual = int(quantidade_atual)
+                    quantidade_atual = float(quantidade_atual)
+                    quantidade_vendida = float(quantidade_vendida)
                 except ValueError:
                     return
                 
-                # Verificar se a quantidade vendida é um número
-                if isinstance(quantidade_vendida, int):
-                    # Subtrair a quantidade vendida
-                    nova_quantidade = quantidade_atual - quantidade_vendida
-                    
-                    # Verifique se a nova quantidade não fica negativa
-                    if nova_quantidade < 0:
-                        return
-                    
-                    # Salvar a nova quantidade como texto
-                    linha[2].value = str(nova_quantidade)  # Convertendo para string
+                # Subtrair a quantidade vendida
+                nova_quantidade = quantidade_atual - quantidade_vendida
+                
+                # Verifique se a nova quantidade não fica negativa
+                if nova_quantidade < 0:
+                    return
+                
+                # Salvar a nova quantidade como texto
+                linha[2].value = str(nova_quantidade)  # Convertendo para string
 
             break
 
@@ -818,10 +817,6 @@ if __name__ == "__main__":
     elif "atualizar_estoque" in sys.argv:
         nome_produto = sys.argv[2]
         quantidade_vendida = sys.argv[3]
-        try:
-            quantidade_vendida = int(quantidade_vendida)  # Converte para float
-        except ValueError:
-            print(f"A quantidade vendida '{quantidade_vendida}' não é um número válido.")
         atualizar_estoque(nome_produto, quantidade_vendida)
     elif "editar" in sys.argv and "funcionario" in sys.argv:
         novo_nome = sys.argv[4]
