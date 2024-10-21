@@ -1566,76 +1566,73 @@ int Caixa() {
 
     char command[512], nome[50] = "";
     int cpf = 0, id = 0;
-
-    switch (escolha) {
-        case 1: {
-            snprintf(command, sizeof(command),
-                "python \"C:\\Users\\gtava\\OneDrive\\Documentos\\project\\output\\excel_utils.py\" buscar cliente \"Todos\"");
-            FILE *fp = popen(command, "r");
-            if (fp == NULL) {
-                printf("Falha ao executar o comando.\n");
-                return 1;
-            }
-
-            char output[1035];
-            while (fgets(output, sizeof(output), fp) != NULL) {
-                if (strstr(output, "Nenhum") != NULL) {
-                    // Se houver uma mensagem de erro, retorne para a tela de cadastro
-                    pclose(fp);
-                    sleep(2);
-                    Busca();  // Voltar ao menu de cadastro
-                    return 1;
-                } else {
-                    // Imprime a saída do comando python (lista de clientes)
-                    printf("%s", output);
-                }
-            }
-            pclose(fp);
-
-            int id_cliente;
-            printf("\nDigite o ID do(a) cliente conforme a tabela acima: ");
-            scanf("%i", &id_cliente);
-
-            snprintf(command, sizeof(command),
-                    "python \"C:\\Users\\gtava\\OneDrive\\Documentos\\project\\output\\excel_utils.py\" buscar cliente \"%i\"", id_cliente);
-
-            fp = popen(command, "r");
-            if (fp == NULL) {
-                printf("Erro ao executar comando.\n");
-                return 1;
-            }
-
-            Cliente cliente;
-            char nome_completo[100];  // Buffer temporário para armazenar o nome completo
-
-            while (fgets(output, sizeof(output), fp) != NULL) {
-                // Captura o ID, o nome completo e o CPF
-                // %d para o ID, %[^0-9] para capturar o nome até que encontre um número (início do CPF), %s para o CPF
-                sscanf(output, "%d %99[^0-9] %s", &cliente.id, nome_completo, cliente.cpf);
-
-                // Copia o nome completo para o campo 'nome' da estrutura Cliente, removendo espaços extras
-                strncpy(cliente.nome, nome_completo, sizeof(cliente.nome) - 1);
-                cliente.nome[sizeof(cliente.nome) - 1] = '\0';  // Certifica-se de que a string seja terminada corretamente
-
-                // Chama a função com CPF como string
-                caixaTerminal(produtos, totalProdutos, cliente.cpf, cliente.nome, cliente.id);
-            }
-
+    
+    if (escolha == 1) {
+        snprintf(command, sizeof(command),
+            "python \"C:\\Users\\gtava\\OneDrive\\Documentos\\project\\output\\excel_utils.py\" buscar cliente \"Todos\"");
+        FILE *fp = popen(command, "r");
+        if (fp == NULL) {
+            printf("Falha ao executar o comando.\n");
+            return 1;
         }
-        case 2:
-            // Continuar com ou sem cliente
-            caixaTerminal(produtos, totalProdutos, cpf, nome, id);
-        case 3:
-            // Cancelar operação
-            printf("Operacao cancelada.\n");
-            break;
-        case 9:
-            // Encerrar o sistema
-            printf("Sistema encerrado.\n");
-            exit(0);
-            break;
-    }
 
+        char output[1035];
+        while (fgets(output, sizeof(output), fp) != NULL) {
+            if (strstr(output, "Nenhum") != NULL) {
+                // Se houver uma mensagem de erro, retorne para a tela de cadastro
+                pclose(fp);
+                sleep(2);
+                Busca();  // Voltar ao menu de cadastro
+                return 1;
+            } else {
+                // Imprime a saída do comando python (lista de clientes)
+                printf("%s", output);
+            }
+        }
+        pclose(fp);
+
+        int id_cliente;
+        printf("\nDigite o ID do(a) cliente conforme a tabela acima: ");
+        scanf("%i", &id_cliente);
+
+        snprintf(command, sizeof(command),
+                "python \"C:\\Users\\gtava\\OneDrive\\Documentos\\project\\output\\excel_utils.py\" buscar cliente \"%i\"", id_cliente);
+
+        fp = popen(command, "r");
+        if (fp == NULL) {
+            printf("Erro ao executar comando.\n");
+            return 1;
+        }
+
+        Cliente cliente;
+        char nome_completo[100];  // Buffer temporário para armazenar o nome completo
+
+        while (fgets(output, sizeof(output), fp) != NULL) {
+            // Captura o ID, o nome completo e o CPF
+            // %d para o ID, %[^0-9] para capturar o nome até que encontre um número (início do CPF), %s para o CPF
+            sscanf(output, "%d %99[^0-9] %s", &cliente.id, nome_completo, cliente.cpf);
+
+            // Copia o nome completo para o campo 'nome' da estrutura Cliente, removendo espaços extras
+            strncpy(cliente.nome, nome_completo, sizeof(cliente.nome) - 1);
+            cliente.nome[sizeof(cliente.nome) - 1] = '\0';  // Certifica-se de que a string seja terminada corretamente
+
+            // Chama a função com CPF como string
+            caixaTerminal(produtos, totalProdutos, cliente.cpf, cliente.nome, cliente.id);
+        }
+
+    }else if(escolha == 2){
+        // Continuar com ou sem cliente
+        caixaTerminal(produtos, totalProdutos, cpf, nome, id);
+    }else if(escolha == 3){
+        // Cancelar operação
+        printf("Operacao cancelada.\n");
+        sleep(1);
+        menu();
+    }else if(escolha == 3){
+        // Encerrar o sistema
+        printf("Sistema encerrado.\n");
+        exit(0);
+    }
     return 0;
 }
 
