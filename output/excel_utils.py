@@ -343,30 +343,25 @@ Comportamento:
 def editar_produto(novo_nome, novo_preco, nova_quantidade, novo_tipo, id_produto):
     # Lê os dados atuais da planilha 'Produtos'
     df_produto = ler_dados_planilha('Produtos')
-    print(id_produto)
     if df_produto is not None:
         # Localiza o produto pelo ID
         produto_idx = df_produto[df_produto['ID'] == id_produto].index
 
-        if not produto_idx.empty:
-            # Atualiza os campos se o usuário forneceu novos valores
-            if novo_nome:
-                df_produto.at[produto_idx[0], 'Nome'] = novo_nome
-            if novo_preco:
-                df_produto.at[produto_idx[0], 'Preco'] = round(float(novo_preco), 2)
-            if nova_quantidade:
-                df_produto.at[produto_idx[0], 'Quantidade'] = float(nova_quantidade)
-            if novo_tipo:
-                df_produto.at[produto_idx[0], 'Tipo de Venda'] = novo_tipo
+        if novo_nome != "Atual":
+            df_produto.at[produto_idx[0], 'Nome'] = novo_nome
+        if novo_preco != '-1.00':
+            df_produto.at[produto_idx[0], 'Preco'] = round(float(novo_preco), 2)
+        if nova_quantidade != '-1.00':
+            df_produto.at[produto_idx[0], 'Quantidade'] = round(float(nova_quantidade), 2)
+        if novo_tipo != "Atual":
+            df_produto.at[produto_idx[0], 'Tipo de Venda'] = novo_tipo
 
-            # Salva as alterações na planilha
-            escrever_dados_planilha(df_produto, 'Produtos')
+        # Salva as alterações na planilha
+        escrever_dados_planilha(df_produto, 'Produtos')
 
-            print("Produto atualizado com sucesso!")
-        else:
-            print("Produto com o ID especificado não foi encontrado.")
+        print("\nProduto atualizado com sucesso!\n")
     else:
-        print("Erro ao ler a planilha.")
+        print("\nErro ao ler a planilha.\n")
 
 """
 Exclui um produto da planilha 'Produtos' com base no ID fornecido.
@@ -834,7 +829,7 @@ if __name__ == "__main__":
         nova_data_nasc = sys.argv[7]
         id_cliente = sys.argv[3]
         editar_cliente(novo_nome, novo_cpf, novo_rg, nova_data_nasc, id_cliente)
-    elif "editar" in sys.argv and "produto" in sys.argv:
+    elif "editar produto" in sys.argv:
         novo_nome = sys.argv[2]
         novo_preco = sys.argv[3]
         nova_quantidade = sys.argv[4]
