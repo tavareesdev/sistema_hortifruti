@@ -199,6 +199,15 @@ def cadastrar_cliente(nome, cpf, data_nascimento, rg):
     else:
         print("Erro ao ler as planilhas.")
 
+
+def tratar_valor(valor):
+    """Converte valores numéricos com vírgula para float."""
+    try:
+        # Substitui vírgula por ponto e converte para float
+        return float(valor.replace(',', '.'))
+    except ValueError:
+        raise ValueError(f"Valor inválido: {valor}")
+
 """
 Cadastra um novo produto na planilha 'Produtos'.
 
@@ -215,6 +224,7 @@ Comportamento:
 - Adiciona o novo produto à planilha e grava as alterações.
 - Se o preço não for válido, exibe uma mensagem de erro.
 """
+
 def cadastrar_produto(nome, preco, qtd_produto, tipo_produto):
     # Lê os dados atuais das planilhas
     df_produto = ler_dados_planilha('Produtos')
@@ -229,19 +239,19 @@ def cadastrar_produto(nome, preco, qtd_produto, tipo_produto):
         novo_id = gerar_id_unico(df_produto)
 
         try:
-            # Converte o preço para float e arredonda para duas casas decimais
-            preco_float = float(preco)  # Converte para float
-            preco_arredondado = round(preco_float, 2)  # Arredonda para duas casas decimais
-        except ValueError:
-            print("Erro: O preço deve ser um número válido.")
+            # Converte valores numéricos
+            preco_formatado = "{:.2f}".format(tratar_valor(preco))
+            qtd_formatada = "{:.1f}".format(tratar_valor(qtd_produto))
+        except ValueError as e:
+            print(f"Erro: {e}")
             return
-        
-        # Adiciona o novo produto à planilha 'produto'
+
+        # Adiciona o novo produto à planilha 'Produtos'
         novo_produto = pd.DataFrame({
             'ID': [novo_id],
             'Nome': [nome],
-            'Preco': [preco_arredondado],
-            'Quantidade': [qtd_produto],
+            'Preco': [preco_formatado],
+            'Quantidade': [qtd_formatada],
             'Tipo de Venda': [tipo_produto]
         })
         df_produto = pd.concat([df_produto, novo_produto], ignore_index=True)
@@ -344,15 +354,22 @@ def editar_produto(novo_nome, novo_preco, nova_quantidade, novo_tipo, id_produto
     # Lê os dados atuais da planilha 'Produtos'
     df_produto = ler_dados_planilha('Produtos')
     if df_produto is not None:
+        try:
+            # Converte valores numéricos
+            preco_formatado = "{:.2f}".format(tratar_valor(novo_preco))
+            qtd_formatada = "{:.1f}".format(tratar_valor(nova_quantidade))
+        except ValueError as e:
+            print(f"Erro: {e}")
+            return
         # Localiza o produto pelo ID
         produto_idx = df_produto[df_produto['ID'] == id_produto].index
 
         if novo_nome != "Atual":
             df_produto.at[produto_idx[0], 'Nome'] = novo_nome
-        if novo_preco != '-1.00':
-            df_produto.at[produto_idx[0], 'Preco'] = round(float(novo_preco), 2)
-        if nova_quantidade != '-1.00':
-            df_produto.at[produto_idx[0], 'Quantidade'] = round(float(nova_quantidade), 2)
+        if preco_formatado != "-1.00":
+            df_produto.at[produto_idx[0], 'Preco'] = preco_formatado
+        if qtd_formatada != "-1.0":
+            df_produto.at[produto_idx[0], 'Quantidade'] = qtd_formatada
         if novo_tipo != "Atual":
             df_produto.at[produto_idx[0], 'Tipo de Venda'] = novo_tipo
 
@@ -800,6 +817,7 @@ if __name__ == "__main__":
         processar_arquivo_venda(nome_arquivo)
     elif "excluir" in sys.argv and "funcionario" in sys.argv:
         id_funcionario = sys.argv[3]
+        excluir_funcionario(id_funcionario)
     elif "excluir" in sys.argv and "cliente" in sys.argv:
         id_cliente = sys.argv[3]
         excluir_cliente(id_cliente)
@@ -868,7 +886,4 @@ if __name__ == "__main__":
         nome = sys.argv[1]
         buscar_produto(nome)
     else:
-        print("Uso: python excel_utils.py <username> <password> ou python excel_utils.py <nome> <cpf> <data_nascimento> <rg> <username> <password> <tipo>")
-        print(len(sys.argv))
-        print(sys.argv)
         sys.exit(1)
